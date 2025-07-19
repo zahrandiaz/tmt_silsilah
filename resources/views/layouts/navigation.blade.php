@@ -15,6 +15,25 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    <x-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.index')">
+                        {{ __('Pengaturan') }}
+                    </x-nav-link>
+
+                    <!-- TAMBAHKAN BLOK INI -->
+                    <x-nav-link :href="route('people.index')" :active="request()->routeIs('people.*')">
+                        {{ __('Silsilah') }}
+                    </x-nav-link>
+                    <!-- BATAS PENAMBAHAN -->
+
+                    <x-nav-link :href="route('tree.index')" :active="request()->routeIs('tree.index')">
+                        {{ __('Pohon Silsilah') }}
+                    </x-nav-link>
+                    @if (auth()->user()->role === 'admin')
+                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.index')">
+                            {{ __('Manajemen Pengguna') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
