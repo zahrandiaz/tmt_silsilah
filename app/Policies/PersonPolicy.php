@@ -14,39 +14,51 @@ class PersonPolicy
      */
     public function update(User $user, Person $person): bool
     {
-        // 2. Admin bisa mengubah siapa saja
+        // 1. Admin bisa mengubah siapa saja
         if ($user->role === 'admin') {
             return true;
         }
 
-        // 3. Jika akun user tidak tertaut ke data Person, maka tidak punya hak akses
+        // 2. Jika akun user tidak tertaut ke data Person, maka tidak punya hak akses
         if (!$user->person_id) {
             return false;
         }
 
-        // 4. User bisa mengubah data person yang tertaut dengan akunnya (dirinya sendiri)
+        // 3. User bisa mengubah data person yang tertaut dengan akunnya (dirinya sendiri)
         if ($user->person_id === $person->id) {
             return true;
         }
 
+        // --- AWAL PERUBAHAN ---
+        // 4. User bisa mengubah data pasangannya
+        // Ambil dulu model Person yang merepresentasikan user yang sedang login
+        $userAsPerson = Person::find($user->person_id);
+        
+        // Cek apakah $person yang akan diubah ada di dalam koleksi pasangan dari $userAsPerson
+        if ($userAsPerson && $userAsPerson->spouses()->contains($person)) {
+            return true;
+        }
+        // --- AKHIR PERUBAHAN ---
+
         // 5. User bisa mengubah data anak-anaknya
-        // Cari semua unit keluarga di mana user ini adalah seorang 'partner' (orang tua)
         $familyUnitIds = Relationship::where('person_id', $user->person_id)
             ->where('role_in_family', 'partner')
             ->pluck('family_unit_id');
 
-        // Jika user bukan partner di keluarga manapun, maka tidak punya anak untuk diedit
-        if ($familyUnitIds->isEmpty()) {
-            return false;
+        // Cek anak hanya jika user ini adalah orang tua di sebuah unit keluarga
+        if ($familyUnitIds->isNotEmpty()) {
+            $isChild = Relationship::whereIn('family_unit_id', $familyUnitIds)
+                ->where('person_id', $person->id)
+                ->where('role_in_family', 'child')
+                ->exists();
+
+            if ($isChild) {
+                return true;
+            }
         }
 
-        // Cek apakah person yang akan diubah adalah 'child' di salah satu unit keluarga tersebut
-        $isChild = Relationship::whereIn('family_unit_id', $familyUnitIds)
-            ->where('person_id', $person->id)
-            ->where('role_in_family', 'child')
-            ->exists();
-
-        return $isChild;
+        // Jika tidak ada kondisi di atas yang terpenuhi, tolak akses
+        return false;
     }
 
     /**

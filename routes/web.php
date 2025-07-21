@@ -3,7 +3,6 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PersonController;
 use App\Http\Controllers\SettingController;
-// use App\Http\Controllers\TreeController; // Dihapus
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ExportController;
 use App\Http\Middleware\AdminMiddleware;
@@ -14,23 +13,31 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Grup Rute yang Dilindungi oleh Middleware Privasi
-Route::middleware(CheckSilsilahPrivacy::class)->group(function () {
-    // Rute untuk melihat detail individu sekarang di sini
-    Route::get('/people/{person}', [PersonController::class, 'show'])->name('people.show');
-});
-
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+// --- SEMUA RUTE 'PEOPLE' DIKELOMPOKKAN DI SINI ---
+Route::middleware('auth')->group(function () {
+    // Rute resource (create, store, edit, update, destroy, index) didefinisikan DULUAN.
+    // Ini memastikan /people/create tidak tertimpa oleh /people/{person}.
+    Route::resource('people', PersonController::class)->except(['show']);
+});
+
+// Rute 'show' yang memiliki parameter, didefinisikan SETELAHNYA.
+// Rute ini juga diberi middleware privasi.
+Route::get('/people/{person}', [PersonController::class, 'show'])
+    ->middleware(CheckSilsilahPrivacy::class)
+    ->name('people.show');
+// --- AKHIR PENGELOMPOKAN RUTE PEOPLE ---
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Resource 'people' sekarang tidak lagi menyertakan 'show'
-    Route::resource('people', PersonController::class)->except(['show']); 
+    // Route::resource('people', ...) sudah dipindahkan ke atas
 
     Route::middleware(AdminMiddleware::class)->group(function () {
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
