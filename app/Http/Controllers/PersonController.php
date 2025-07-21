@@ -35,7 +35,16 @@ class PersonController extends Controller
             'mother_id' => 'nullable|exists:people,id',
         ]);
 
-        $person = Person::create($validated);
+        // --- AWAL PERUBAHAN ---
+        // 1. Siapkan data khusus untuk tabel 'people'.
+        //    Kita ambil semua data tervalidasi KECUALI 'father_id' dan 'mother_id'.
+        $personData = collect($validated)->except(['father_id', 'mother_id'])->all();
+
+        // 2. Buat record Person hanya dengan data yang relevan.
+        $person = Person::create($personData);
+        // --- AKHIR PERUBAHAN ---
+        
+        // 3. Panggil syncParents dengan data ID orang tua dari request asli.
         $this->syncParents($person, $request->father_id, $request->mother_id);
 
         return redirect()->route('people.index')->with('success', 'Anggota keluarga berhasil ditambahkan.');
@@ -89,7 +98,15 @@ class PersonController extends Controller
             'mother_id' => 'nullable|exists:people,id',
         ]);
 
-        $person->update($validated);
+        // --- AWAL PERUBAHAN ---
+        // 1. Pisahkan data Person dari data relasi
+        $personData = collect($validated)->except(['father_id', 'mother_id'])->all();
+
+        // 2. Update data Person hanya dengan data yang relevan
+        $person->update($personData);
+        // --- AKHIR PERUBAHAN ---
+
+        // 3. Sinkronkan relasi orang tua menggunakan data ID dari request
         $this->syncParents($person, $request->father_id, $request->mother_id);
 
         return redirect()->route('people.index')->with('success', 'Data anggota keluarga berhasil diperbarui.');
