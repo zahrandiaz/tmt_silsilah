@@ -45,6 +45,10 @@
 
                                     <td class="whitespace-nowrap px-4 py-2">
                                         <div class="flex items-center space-x-2">
+                                            <a href="{{ route('people.show', $person) }}" class="inline-block rounded bg-yellow-500 px-4 py-2 text-xs font-medium text-black hover:bg-yellow-600">
+                                                Lihat Silsilah
+                                            </a>
+
                                             @can('update', $person)
                                                 <a href="{{ route('people.edit', $person) }}" class="inline-block rounded bg-yellow-500 px-4 py-2 text-xs font-medium text-black hover:bg-yellow-600">
                                                     Edit

@@ -8,50 +8,54 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900" style="overflow-x: auto;">
-
-                    <div id="chart_div"></div>
-
+                <div class="p-6 text-gray-900">
+                    <div class="silsilah-container">
+                        @if($ancestors->isEmpty())
+                            <p>Belum ada data silsilah.</p>
+                        @else
+                            {{-- Mulai rekursi dari generasi teratas --}}
+                            @include('partials.person-node', ['people' => $ancestors])
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-        google.charts.load('current', {packages:['orgchart']});
-        google.charts.setOnLoadCallback(drawChart);
-
-        function drawChart() {
-            var data = new google.visualization.DataTable();
-            // Kolom harus: Node, Parent, Tooltip
-            data.addColumn('string', 'Name');
-            data.addColumn('string', 'Manager');
-            data.addColumn('string', 'ToolTip');
-
-            // Mengambil data dari controller
-            let chartData = {!! $chartData !!};
-            
-            // Data dari controller sudah dalam format yang benar [Node, Parent, Tooltip]
-            data.addRows(chartData);
-
-            // Buat chart
-            var chart = new google.visualization.OrgChart(document.getElementById('chart_div'));
-            
-            // Gambar chart
-            chart.draw(data, {
-                'allowHtml': true,
-                'size': 'large',
-            });
-        }
-    </script>
-
     <style>
-    .org-chart-node {
-        border: 2px solid #b4b4b4; /* Atur border default jika perlu */
-    }
-    .google-visualization-orgchart-node-medium {
-        font-size: 1rem; /* Sesuaikan ukuran font jika perlu */
-    }
+        .silsilah-container ul {
+            padding-left: 30px;
+            list-style: none;
+            position: relative;
+        }
+        .silsilah-container ul li {
+            margin-top: 0.5rem;
+            position: relative;
+        }
+        .silsilah-container ul li::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -20px;
+            border-left: 2px solid #cbd5e1;
+            border-bottom: 2px solid #cbd5e1;
+            width: 20px;
+            height: 25px;
+            border-bottom-left-radius: 6px;
+        }
+        .silsilah-container > ul > li::before {
+            border: none;
+        }
+        .person-block {
+            padding: 8px;
+            border-radius: 6px;
+            background-color: #f7fafc;
+            border: 1px solid #e2e8f0;
+            display: inline-block;
+        }
+        .partner {
+            margin-left: 8px;
+            font-style: italic;
+        }
     </style>
 </x-app-layout>
