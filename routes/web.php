@@ -5,6 +5,7 @@ use App\Http\Controllers\PersonController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\PhotoController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckSilsilahPrivacy;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // --- AWAL PENAMBAHAN RUTE FOTO ---
+    Route::post('/people/{person}/photos', [PhotoController::class, 'store'])->name('photos.store');
+    Route::delete('/photos/{photo}', [PhotoController::class, 'destroy'])->name('photos.destroy');
+    // --- AKHIR PENAMBAHAN RUTE FOTO ---
+    
     // Route::resource('people', ...) sudah dipindahkan ke atas
 
     Route::middleware(AdminMiddleware::class)->group(function () {
