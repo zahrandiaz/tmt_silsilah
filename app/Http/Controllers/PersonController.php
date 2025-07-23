@@ -16,13 +16,13 @@ class PersonController extends Controller
 
     public function create()
     {
+        // Untuk halaman create, kita tidak perlu filter apa pun.
         $people = Person::orderBy('name')->get();
         return view('people.create', compact('people'));
     }
 
     public function store(Request $request)
     {
-        // Menambahkan validasi untuk data kematian
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'gender' => 'required|in:Laki-laki,Perempuan',
@@ -31,20 +31,16 @@ class PersonController extends Controller
             'death_date' => 'nullable|date|after_or_equal:birth_date',
             'death_place' => 'nullable|string|max:255',
             'biography' => 'nullable|string',
-            'father_id' => 'nullable|exists:people,id',
-            'mother_id' => 'nullable|exists:people,id',
+            // --- AWAL PERUBAHAN VALIDASI ---
+            // Validasi untuk mencegah memilih diri sendiri sebagai orang tua.
+            'father_id' => 'nullable|exists:people,id|different:id',
+            'mother_id' => 'nullable|exists:people,id|different:id',
+            // --- AKHIR PERUBAHAN VALIDASI ---
         ]);
 
-        // --- AWAL PERUBAHAN ---
-        // 1. Siapkan data khusus untuk tabel 'people'.
-        //    Kita ambil semua data tervalidasi KECUALI 'father_id' dan 'mother_id'.
         $personData = collect($validated)->except(['father_id', 'mother_id'])->all();
-
-        // 2. Buat record Person hanya dengan data yang relevan.
         $person = Person::create($personData);
-        // --- AKHIR PERUBAHAN ---
         
-        // 3. Panggil syncParents dengan data ID orang tua dari request asli.
         $this->syncParents($person, $request->father_id, $request->mother_id);
 
         return redirect()->route('people.index')->with('success', 'Anggota keluarga berhasil ditambahkan.');
@@ -58,19 +54,30 @@ class PersonController extends Controller
 
     public function edit(Person $person)
     {
-        $people = Person::orderBy('name')->get();
+        // --- AWAL PERUBAHAN LOGIKA ---
 
-        // Logika untuk mengambil ID Ayah dan Ibu yang sudah ada
+        // 1. Ambil semua ID keturunan dari orang yang sedang diedit.
+        $descendantIds = $person->getDescendantIds();
+
+        // 2. Buat daftar ID yang tidak boleh dipilih sebagai orang tua:
+        //    - Dirinya sendiri ($person->id)
+        //    - Semua keturunannya ($descendantIds)
+        $excludedIds = array_merge([$person->id], $descendantIds);
+
+        // 3. Ambil daftar orang untuk dropdown, KECUALI ID yang dieksklusi.
+        $people = Person::whereNotIn('id', $excludedIds)->orderBy('name')->get();
+        
+        // --- AKHIR PERUBAHAN LOGIKA ---
+
+        // Logika untuk mengambil ID Ayah dan Ibu yang sudah ada (tetap sama)
         $fatherId = null;
         $motherId = null;
         
-        // Cari unit keluarga di mana orang ini adalah anak
         $childRelation = Relationship::where('person_id', $person->id)
             ->where('role_in_family', 'child')
             ->first();
 
         if ($childRelation) {
-            // Jika ditemukan, cari partner (orang tua) di unit keluarga yang sama
             $parents = Relationship::where('family_unit_id', $childRelation->family_unit_id)
                 ->where('role_in_family', 'partner')
                 ->join('people', 'relationships.person_id', '=', 'people.id')
@@ -85,7 +92,6 @@ class PersonController extends Controller
 
     public function update(Request $request, Person $person)
     {
-        // Menambahkan validasi untuk data kematian
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'gender' => 'required|in:Laki-laki,Perempuan',
@@ -94,19 +100,16 @@ class PersonController extends Controller
             'death_date' => 'nullable|date|after_or_equal:birth_date',
             'death_place' => 'nullable|string|max:255',
             'biography' => 'nullable|string',
-            'father_id' => 'nullable|exists:people,id',
-            'mother_id' => 'nullable|exists:people,id',
+            // --- AWAL PERUBAHAN VALIDASI ---
+            // Validasi untuk mencegah memilih diri sendiri atau keturunan sebagai orang tua.
+            'father_id' => ['nullable', 'exists:people,id', 'different:id', 'not_in:'.implode(',', $person->getDescendantIds())],
+            'mother_id' => ['nullable', 'exists:people,id', 'different:id', 'not_in:'.implode(',', $person->getDescendantIds())],
+            // --- AKHIR PERUBAHAN VALIDASI ---
         ]);
 
-        // --- AWAL PERUBAHAN ---
-        // 1. Pisahkan data Person dari data relasi
         $personData = collect($validated)->except(['father_id', 'mother_id'])->all();
-
-        // 2. Update data Person hanya dengan data yang relevan
         $person->update($personData);
-        // --- AKHIR PERUBAHAN ---
 
-        // 3. Sinkronkan relasi orang tua menggunakan data ID dari request
         $this->syncParents($person, $request->father_id, $request->mother_id);
 
         return redirect()->route('people.index')->with('success', 'Data anggota keluarga berhasil diperbarui.');
@@ -120,22 +123,13 @@ class PersonController extends Controller
 
     private function syncParents(Person $child, $fatherId, $motherId)
     {
-        // Hapus relasi 'anak' yang lama untuk orang ini
         Relationship::where('person_id', $child->id)->where('role_in_family', 'child')->delete();
 
-        // Jika tidak ada orang tua yang dipilih, selesai.
         if (!$fatherId && !$motherId) {
             return;
         }
 
-        // Cari unit keluarga yang sudah ada untuk pasangan ini
         $familyUnitId = null;
-        $query = Relationship::where('role_in_family', 'partner');
-
-        if ($fatherId) $query->where('person_id', $fatherId);
-        if ($motherId) $query->where('person_id', $motherId);
-        
-        // Logika untuk menemukan family_unit_id yang cocok
         if ($fatherId && $motherId) {
             $commonFamilies = Relationship::whereIn('person_id', [$fatherId, $motherId])
                 ->where('role_in_family', 'partner')
@@ -156,7 +150,6 @@ class PersonController extends Controller
             }
         }
 
-        // Jika tidak ada unit keluarga yang cocok, buat yang baru
         if (!$familyUnitId) {
             $familyUnitId = (Relationship::max('family_unit_id') ?? 0) + 1;
             if ($fatherId) {
@@ -167,7 +160,6 @@ class PersonController extends Controller
             }
         }
         
-        // Tetapkan anak ke unit keluarga yang benar
         Relationship::create(['family_unit_id' => $familyUnitId, 'person_id' => $child->id, 'role_in_family' => 'child']);
     }
 }

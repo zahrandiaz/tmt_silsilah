@@ -5,13 +5,10 @@
         </h2>
     </x-slot>
 
-    {{-- =================================================================== --}}
-    {{-- ============ AWAL PERUBAHAN UTAMA UNTUK FITUR MODAL FOTO ============ --}}
-    {{-- =================================================================== --}}
     <div x-data="{ showModal: false, largeImageUrl: '' }" @keydown.escape.window="showModal = false">
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-                {{-- Blok Detail Person --}}
+
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <h3 class="text-lg font-medium text-gray-900">{{ $person->name }}</h3>
                     <p class="mt-1 text-sm text-gray-600">
@@ -25,7 +22,6 @@
                     @endif
                 </div>
 
-                {{-- Blok Galeri Foto --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Galeri Foto</h3>
 
@@ -34,7 +30,7 @@
                             <form action="{{ route('photos.store', $person) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <div>
-                                    <x-input-label for="photo" :value="__('Unggah Foto Baru (Max: 2MB)')" />
+                                    <x-input-label for="photo" :value="__('Unggah Foto Baru (Max: 5MB)')" />
                                     <x-text-input id="photo" class="block mt-1 w-full" type="file" name="photo" required />
                                     <x-input-error :messages="$errors->get('photo')" class="mt-2" />
                                 </div>
@@ -109,18 +105,25 @@
                     @endif
                 </div>
 
-                {{-- Blok Silsilah Lainnya --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Leluhur</h3>
                     <div class="silsilah-container">
-                        @include('partials.ancestor-node', ['person' => $person])
+                        @if($person->father() || $person->mother())
+                            @include('partials.ancestor-node', ['person' => $person])
+                        @else
+                            <p class="text-sm text-gray-500">Belum ada data leluhur (orang tua) yang ditambahkan.</p>
+                        @endif
                     </div>
                 </div>
 
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Pasangan & Keturunan</h3>
                     <div class="silsilah-container">
-                        @include('partials.descendant-node', ['person' => $person, 'level' => 0])
+                        @if($person->spouses()->isNotEmpty() || $person->allChildren()->isNotEmpty())
+                            @include('partials.descendant-node', ['person' => $person, 'level' => 0])
+                        @else
+                            <p class="text-sm text-gray-500">Belum ada data pasangan atau keturunan yang ditambahkan.</p>
+                        @endif
                     </div>
                 </div>
             </div>

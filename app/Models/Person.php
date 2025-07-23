@@ -96,4 +96,30 @@ class Person extends Model
         if ($mother) $tree[] = ['person' => $mother, 'children' => $mother->getAncestorTree()];
         return $tree;
     }
+
+    // --- TAMBAHKAN METHOD BARU INI ---
+
+    /**
+     * Mengambil semua ID keturunan (anak, cucu, dst.) secara rekursif.
+     *
+     * @return array
+     */
+    public function getDescendantIds(): array
+    {
+        $descendantIds = [];
+        $children = $this->allChildren(); // Menggunakan relasi allChildren() yang sudah ada
+
+        if ($children->isEmpty()) {
+            return [];
+        }
+
+        foreach ($children as $child) {
+            $descendantIds[] = $child->id;
+            // Secara rekursif memanggil method yang sama untuk setiap anak
+            // dan menggabungkan hasilnya.
+            $descendantIds = array_merge($descendantIds, $child->getDescendantIds());
+        }
+
+        return $descendantIds;
+    }
 }
