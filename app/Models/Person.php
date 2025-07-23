@@ -5,8 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-// --- TAMBAHKAN BARIS INI ---
 use Illuminate\Database\Eloquent\Relations\HasMany;
+// --- TAMBAHKAN BARIS INI ---
+use Illuminate\Support\Facades\Storage;
 
 class Person extends Model
 {
@@ -14,6 +15,25 @@ class Person extends Model
     protected $guarded = [];
 
     // --- AWAL PERUBAHAN ---
+
+    /**
+     * The "booted" method of the model.
+     * Dijalankan sekali saat model diinisialisasi.
+     */
+    protected static function booted(): void
+    {
+        // Daftarkan sebuah event listener yang akan berjalan SEBELUM data Person dihapus.
+        static::deleting(function (Person $person) {
+            // Ambil semua foto yang dimiliki oleh orang ini.
+            foreach ($person->photos as $photo) {
+                // Hapus file fisik dari direktori storage.
+                Storage::disk('public')->delete($photo->image_path);
+            }
+        });
+    }
+
+    // --- AKHIR PERUBAHAN ---
+
     /**
      * Mendefinisikan bahwa satu Person bisa memiliki banyak foto.
      */
@@ -21,7 +41,6 @@ class Person extends Model
     {
         return $this->hasMany(Photo::class)->orderBy('created_at', 'desc');
     }
-    // --- AKHIR PERUBAHAN ---
 
     public function father(): ?Person
     {

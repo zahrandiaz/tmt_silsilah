@@ -6,37 +6,53 @@ use App\Models\Person;
 use App\Models\Photo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-// --- TAMBAHKAN BARIS INI ---
 use Illuminate\Validation\Rule;
+use Intervention\Image\ImageManager;
 
 class PhotoController extends Controller
 {
     /**
-     * Menyimpan foto baru yang diunggah.
+     * Menyimpan foto baru yang diunggah dan dikompres ke format WebP.
      */
     public function store(Request $request, Person $person)
     {
-        // 1. Validasi request
+        // 1. Validasi request (tetap sama)
         $request->validate([
-            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Tambahkan webp ke mimes
             'description' => 'nullable|string|max:255',
-            // --- TAMBAHKAN VALIDASI UNTUK KATEGORI ---
             'category' => ['required', Rule::in(['Masa Kecil', 'Masa Dewasa', 'Masa Tua', 'Galeri'])],
         ]);
 
-        // 2. Simpan file foto ke storage
-        $path = $request->file('photo')->store('photos', 'public');
+        // --- AWAL PERUBAHAN LOGIKA ENCODING ---
 
-        // 3. Buat record baru di database, sekarang dengan kategori
+        // 2. Inisialisasi Image Manager
+        $manager = ImageManager::gd();
+
+        // 3. Baca file yang diunggah
+        $file = $request->file('photo');
+        $image = $manager->read($file);
+        
+        // 4. Kompres gambar ke format WebP dengan kualitas 75%
+        $encoded = $image->toWebp(75); 
+
+        // 5. Buat nama file unik dengan ekstensi .webp
+        $hash = md5($encoded->__toString() . time());
+        $path = "photos/{$hash}.webp"; // Ubah ekstensi menjadi .webp
+
+        // 6. Simpan gambar yang sudah dikompres ke storage
+        Storage::disk('public')->put($path, $encoded);
+
+        // --- AKHIR PERUBAHAN LOGIKA ENCODING ---
+
+        // 7. Buat record baru di database
         $person->photos()->create([
             'image_path' => $path,
             'description' => $request->description,
-            // --- TAMBAHKAN KATEGORI KE DATA YANG DISIMPAN ---
             'category' => $request->category,
         ]);
 
-        // 4. Kembali ke halaman sebelumnya dengan pesan sukses
-        return back()->with('success', 'Foto berhasil diunggah.');
+        // 8. Kembali ke halaman sebelumnya
+        return back()->with('success', 'Foto berhasil diunggah dan dikompres ke WebP.');
     }
 
     /**
