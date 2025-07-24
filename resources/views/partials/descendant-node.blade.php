@@ -8,10 +8,18 @@
         <div class="person-block">
             <span>
                 @if($person->gender == 'Laki-laki') ♂️ @else ♀️ @endif
-                <strong>{{ $person->name }}</strong>
+                <strong>
+                    <a href="{{ route('people.show', $person->id) }}" class="text-blue-600 hover:underline">
+                        {{ $person->name }}
+                    </a>
+                </strong>
             </span>
             @foreach ($person->spouses() as $spouse)
-                <span class="partner">& @if($spouse->gender == 'Laki-laki') ♂️ @else ♀️ @endif {{ $spouse->name }}</span>
+                <span class="partner">& @if($spouse->gender == 'Laki-laki') ♂️ @else ♀️ @endif
+                    <a href="{{ route('people.show', $spouse->id) }}" class="text-blue-600 hover:underline">
+                        {{ $spouse->name }}
+                    </a>
+                </span>
             @endforeach
         </div>
         
