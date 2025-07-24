@@ -6,37 +6,53 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-// --- TAMBAHKAN BARIS INI ---
 use Illuminate\Support\Facades\Storage;
+// --- TAMBAHKAN DUA BARIS INI ---
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Carbon;
 
 class Person extends Model
 {
     use HasFactory;
     protected $guarded = [];
 
-    // --- AWAL PERUBAHAN ---
-
-    /**
-     * The "booted" method of the model.
-     * Dijalankan sekali saat model diinisialisasi.
-     */
     protected static function booted(): void
     {
-        // Daftarkan sebuah event listener yang akan berjalan SEBELUM data Person dihapus.
         static::deleting(function (Person $person) {
-            // Ambil semua foto yang dimiliki oleh orang ini.
             foreach ($person->photos as $photo) {
-                // Hapus file fisik dari direktori storage.
                 Storage::disk('public')->delete($photo->image_path);
             }
         });
     }
 
-    // --- AKHIR PERUBAHAN ---
+    // --- AWAL PENAMBAHAN ACCESSOR ---
 
     /**
-     * Mendefinisikan bahwa satu Person bisa memiliki banyak foto.
+     * Mendapatkan atribut tanggal lahir yang sudah diformat.
      */
+    protected function birthDateFormatted(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value, array $attributes) => $attributes['birth_date']
+                ? Carbon::parse($attributes['birth_date'])->translatedFormat('d F Y')
+                : '?'
+        );
+    }
+
+    /**
+     * Mendapatkan atribut tanggal wafat yang sudah diformat.
+     */
+    protected function deathDateFormatted(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value, array $attributes) => $attributes['death_date']
+                ? Carbon::parse($attributes['death_date'])->translatedFormat('d F Y')
+                : null
+        );
+    }
+
+    // --- AKHIR PENAMBAHAN ACCESSOR ---
+
     public function photos(): HasMany
     {
         return $this->hasMany(Photo::class)->orderBy('created_at', 'desc');
@@ -97,17 +113,10 @@ class Person extends Model
         return $tree;
     }
 
-    // --- TAMBAHKAN METHOD BARU INI ---
-
-    /**
-     * Mengambil semua ID keturunan (anak, cucu, dst.) secara rekursif.
-     *
-     * @return array
-     */
     public function getDescendantIds(): array
     {
         $descendantIds = [];
-        $children = $this->allChildren(); // Menggunakan relasi allChildren() yang sudah ada
+        $children = $this->allChildren();
 
         if ($children->isEmpty()) {
             return [];
@@ -115,37 +124,25 @@ class Person extends Model
 
         foreach ($children as $child) {
             $descendantIds[] = $child->id;
-            // Secara rekursif memanggil method yang sama untuk setiap anak
-            // dan menggabungkan hasilnya.
             $descendantIds = array_merge($descendantIds, $child->getDescendantIds());
         }
 
         return $descendantIds;
     }
 
-    /**
-     * Mengambil daftar leluhur dalam urutan yang benar untuk breadcrumbs.
-     *
-     * @return \Illuminate\Support\Collection
-     */
     public function getBreadcrumbs(): Collection
     {
         $breadcrumbs = collect();
         $current = $this;
 
-        // Terus berjalan ke atas selama orang tua masih ada.
         while ($parent = $current->father() ?? $current->mother()) {
             $breadcrumbs->push($parent);
             $current = $parent;
         }
 
-        // Balik urutan array agar leluhur terjauh ada di awal.
         return $breadcrumbs->reverse();
     }
 
-    /**
-     * Mendefinisikan bahwa satu Person bisa memiliki satu User.
-     */
     public function user()
     {
         return $this->hasOne(User::class);

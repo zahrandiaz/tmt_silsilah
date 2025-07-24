@@ -39,13 +39,16 @@
                         </li>
                     </ol>
                 </nav>
+
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <h3 class="text-lg font-medium text-gray-900">{{ $person->name }}</h3>
                     <p class="mt-1 text-sm text-gray-600">
-                        Lahir: {{ $person->birth_date ? \Carbon\Carbon::parse($person->birth_date)->format('d F Y') : '?' }} di {{ $person->birth_place ?? '?' }}
-                        @if($person->death_date)
-                            <br>Wafat: {{ \Carbon\Carbon::parse($person->death_date)->format('d F Y') }} di {{ $person->death_place ?? '?' }}
+                        {{-- AWAL PERUBAHAN --}}
+                        Lahir: {{ $person->birth_date_formatted }} di {{ $person->birth_place ?? '?' }}
+                        @if($person->death_date_formatted)
+                            <br>Wafat: {{ $person->death_date_formatted }} di {{ $person->death_place ?? '?' }}
                         @endif
+                        {{-- AKHIR PERUBAHAN --}}
                     </p>
                     @if($person->biography)
                         <p class="mt-4">{{ $person->biography }}</p>
@@ -187,7 +190,7 @@
                 </div>
             </div>
         </div>
-        </div>
+    </div>
 
     <style>
         .silsilah-container ul { padding-left: 20px; list-style: none; position: relative; }

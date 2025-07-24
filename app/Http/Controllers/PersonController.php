@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Person;
 use App\Models\Relationship;
-use Illuminate\Http\Request;
+// --- TAMBAHKAN DUA BARIS INI ---
+use App\Http\Requests\StorePersonRequest;
+use App\Http\Requests\UpdatePersonRequest;
 
 class PersonController extends Controller
 {
@@ -16,27 +18,15 @@ class PersonController extends Controller
 
     public function create()
     {
-        // Untuk halaman create, kita tidak perlu filter apa pun.
         $people = Person::orderBy('name')->get();
         return view('people.create', compact('people'));
     }
 
-    public function store(Request $request)
+    // --- AWAL PERUBAHAN ---
+    public function store(StorePersonRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'gender' => 'required|in:Laki-laki,Perempuan',
-            'birth_date' => 'nullable|date',
-            'birth_place' => 'nullable|string|max:255',
-            'death_date' => 'nullable|date|after_or_equal:birth_date',
-            'death_place' => 'nullable|string|max:255',
-            'biography' => 'nullable|string',
-            // --- AWAL PERUBAHAN VALIDASI ---
-            // Validasi untuk mencegah memilih diri sendiri sebagai orang tua.
-            'father_id' => 'nullable|exists:people,id|different:id',
-            'mother_id' => 'nullable|exists:people,id|different:id',
-            // --- AKHIR PERUBAHAN VALIDASI ---
-        ]);
+        // Validasi sudah berjalan otomatis. Kita bisa langsung ambil data yang tervalidasi.
+        $validated = $request->validated();
 
         $personData = collect($validated)->except(['father_id', 'mother_id'])->all();
         $person = Person::create($personData);
@@ -45,35 +35,20 @@ class PersonController extends Controller
 
         return redirect()->route('people.index')->with('success', 'Anggota keluarga berhasil ditambahkan.');
     }
+    // --- AKHIR PERUBAHAN ---
 
     public function show(Person $person)
     {
-        // --- AWAL PERUBAHAN ---
         $breadcrumbs = $person->getBreadcrumbs();
-        // Variabel $ancestorTree tidak lagi kita perlukan di sini,
-        // karena view silsilah sudah memanggilnya secara internal.
         return view('people.show', compact('person', 'breadcrumbs'));
-        // --- AKHIR PERUBAHAN ---
     }
 
     public function edit(Person $person)
     {
-        // --- AWAL PERUBAHAN LOGIKA ---
-
-        // 1. Ambil semua ID keturunan dari orang yang sedang diedit.
         $descendantIds = $person->getDescendantIds();
-
-        // 2. Buat daftar ID yang tidak boleh dipilih sebagai orang tua:
-        //    - Dirinya sendiri ($person->id)
-        //    - Semua keturunannya ($descendantIds)
         $excludedIds = array_merge([$person->id], $descendantIds);
-
-        // 3. Ambil daftar orang untuk dropdown, KECUALI ID yang dieksklusi.
         $people = Person::whereNotIn('id', $excludedIds)->orderBy('name')->get();
         
-        // --- AKHIR PERUBAHAN LOGIKA ---
-
-        // Logika untuk mengambil ID Ayah dan Ibu yang sudah ada (tetap sama)
         $fatherId = null;
         $motherId = null;
         
@@ -94,22 +69,11 @@ class PersonController extends Controller
         return view('people.edit', compact('person', 'people', 'fatherId', 'motherId'));
     }
 
-    public function update(Request $request, Person $person)
+    // --- AWAL PERUBAHAN ---
+    public function update(UpdatePersonRequest $request, Person $person)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'gender' => 'required|in:Laki-laki,Perempuan',
-            'birth_date' => 'nullable|date',
-            'birth_place' => 'nullable|string|max:255',
-            'death_date' => 'nullable|date|after_or_equal:birth_date',
-            'death_place' => 'nullable|string|max:255',
-            'biography' => 'nullable|string',
-            // --- AWAL PERUBAHAN VALIDASI ---
-            // Validasi untuk mencegah memilih diri sendiri atau keturunan sebagai orang tua.
-            'father_id' => ['nullable', 'exists:people,id', 'different:id', 'not_in:'.implode(',', $person->getDescendantIds())],
-            'mother_id' => ['nullable', 'exists:people,id', 'different:id', 'not_in:'.implode(',', $person->getDescendantIds())],
-            // --- AKHIR PERUBAHAN VALIDASI ---
-        ]);
+        // Validasi sudah berjalan otomatis.
+        $validated = $request->validated();
 
         $personData = collect($validated)->except(['father_id', 'mother_id'])->all();
         $person->update($personData);
@@ -118,6 +82,7 @@ class PersonController extends Controller
 
         return redirect()->route('people.index')->with('success', 'Data anggota keluarga berhasil diperbarui.');
     }
+    // --- AKHIR PERUBAHAN ---
 
     public function destroy(Person $person)
     {
