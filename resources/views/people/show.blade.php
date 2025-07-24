@@ -43,12 +43,10 @@
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <h3 class="text-lg font-medium text-gray-900">{{ $person->name }}</h3>
                     <p class="mt-1 text-sm text-gray-600">
-                        {{-- AWAL PERUBAHAN --}}
                         Lahir: {{ $person->birth_date_formatted }} di {{ $person->birth_place ?? '?' }}
                         @if($person->death_date_formatted)
                             <br>Wafat: {{ $person->death_date_formatted }} di {{ $person->death_place ?? '?' }}
                         @endif
-                        {{-- AKHIR PERUBAHAN --}}
                     </p>
                     @if($person->biography)
                         <p class="mt-4">{{ $person->biography }}</p>

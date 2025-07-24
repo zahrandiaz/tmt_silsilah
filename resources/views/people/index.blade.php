@@ -14,12 +14,30 @@
                             {{ session('success') }}
                         </div>
                     @endif
-                    <!-- Tombol Tambah Data -->
-                    <a href="{{ route('people.create') }}" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mb-4">
-                        Tambah Anggota
-                    </a>
+                    
+                    {{-- AWAL PERUBAHAN TATA LETAK --}}
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-4 sm:space-y-0">
+                        <a href="{{ route('people.create') }}" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            Tambah Anggota
+                        </a><br>
+                        
+                        <form action="{{ route('people.index') }}" method="GET" class="w-full sm:w-auto">
+                            <div class="flex items-center space-x-2">
+                                <x-text-input type="text" name="search" placeholder="Cari nama..." value="{{ request('search') }}" class="w-full sm:w-64"/>
+                                <x-primary-button type="submit">
+                                    Cari
+                                </x-primary-button>
+                                {{-- Tombol Reset, hanya muncul jika ada pencarian --}}
+                                @if (request('search'))
+                                    <a href="{{ route('people.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-600 transition ease-in-out duration-150">
+                                        Reset
+                                    </a>
+                                @endif
+                            </div>
+                        </form>
+                    </div>
+                    {{-- AKHIR PERUBAHAN TATA LETAK --}}
 
-                    <!-- Tabel Data -->
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
                             <thead class="text-left">
@@ -27,7 +45,7 @@
                                     <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900">Nama</th>
                                     <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900">Jenis Kelamin</th>
                                     <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900">Tanggal Lahir</th>
-                                    <th class="px-4 py-2"></th>
+                                    <th class="px-4 py-2 text-right">Aksi</th>
                                 </tr>
                             </thead>
 
@@ -36,22 +54,15 @@
                                 <tr>
                                     <td class="whitespace-nowrap px-4 py-2 font-medium text-gray-900">{{ $person->name }}</td>
                                     <td class="whitespace-nowrap px-4 py-2 text-gray-700">{{ $person->gender }}</td>
-                                    <td class="whitespace-nowrap px-4 py-2 text-gray-700">{{ $person->birth_date ? \Carbon\Carbon::parse($person->birth_date)->format('d F Y') : '-' }}</td>
-                                    <td class="whitespace-nowrap px-4 py-2">
-                                        <a href="#" class="inline-block rounded bg-yellow-500 px-4 py-2 text-xs font-medium text-black hover:bg-yellow-600">
-                                            Lihat
-                                        </a>
-                                    </td>
-
-                                    <td class="whitespace-nowrap px-4 py-2">
-                                        <div class="flex items-center space-x-2">
+                                    <td class="whitespace-nowrap px-4 py-2 text-gray-700">{{ $person->birth_date_formatted }}</td>
+                                    <td class="whitespace-nowrap px-4 py-2 text-right">
+                                        <div class="flex items-center justify-end space-x-2">
                                             <a href="{{ route('people.show', $person) }}" class="inline-block rounded bg-yellow-500 px-4 py-2 text-xs font-medium text-black hover:bg-yellow-600">
-                                                Lihat Silsilah
+                                                Lihat
                                             </a>
-
                                             @can('update', $person)
                                                 <a href="{{ route('people.edit', $person) }}" class="inline-block rounded bg-yellow-500 px-4 py-2 text-xs font-medium text-black hover:bg-yellow-600">
-                                                    Edit
+                                                    Ubah
                                                 </a>
                                             @endcan
                                             @can('delete', $person)
@@ -69,7 +80,11 @@
                                 @empty
                                 <tr>
                                     <td colspan="4" class="text-center text-gray-500 py-4">
-                                        Belum ada data. Silakan tambah anggota baru.
+                                        @if (request('search'))
+                                            Data dengan nama "{{ request('search') }}" tidak ditemukan.
+                                        @else
+                                            Belum ada data. Silakan tambah anggota baru.
+                                        @endif
                                     </td>
                                 </tr>
                                 @endforelse
@@ -77,9 +92,8 @@
                         </table>
                     </div>
                     
-                    <!-- Paginasi -->
                     <div class="mt-4">
-                        {{ $people->links() }}
+                        {{ $people->appends(request()->query())->links() }}
                     </div>
 
                 </div>

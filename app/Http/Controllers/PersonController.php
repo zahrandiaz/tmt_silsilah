@@ -4,17 +4,32 @@ namespace App\Http\Controllers;
 
 use App\Models\Person;
 use App\Models\Relationship;
-// --- TAMBAHKAN DUA BARIS INI ---
 use App\Http\Requests\StorePersonRequest;
 use App\Http\Requests\UpdatePersonRequest;
+// --- TAMBAHKAN BARIS INI ---
+use Illuminate\Http\Request;
 
 class PersonController extends Controller
 {
-    public function index()
+    // --- AWAL PERUBAHAN ---
+    public function index(Request $request)
     {
-        $people = Person::latest()->paginate(10);
+        // 1. Mulai query builder, jangan langsung ambil data.
+        $query = Person::query();
+
+        // 2. Cek apakah ada input pencarian.
+        if ($request->has('search') && $request->search != '') {
+            // Jika ada, tambahkan kondisi 'where' untuk mencari nama.
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // 3. Ambil hasil query dengan paginasi dan urutan terbaru.
+        $people = $query->latest()->paginate(10);
+
+        // 4. Kirim data ke view.
         return view('people.index', compact('people'));
     }
+    // --- AKHIR PERUBAHAN ---
 
     public function create()
     {
@@ -22,10 +37,8 @@ class PersonController extends Controller
         return view('people.create', compact('people'));
     }
 
-    // --- AWAL PERUBAHAN ---
     public function store(StorePersonRequest $request)
     {
-        // Validasi sudah berjalan otomatis. Kita bisa langsung ambil data yang tervalidasi.
         $validated = $request->validated();
 
         $personData = collect($validated)->except(['father_id', 'mother_id'])->all();
@@ -35,7 +48,6 @@ class PersonController extends Controller
 
         return redirect()->route('people.index')->with('success', 'Anggota keluarga berhasil ditambahkan.');
     }
-    // --- AKHIR PERUBAHAN ---
 
     public function show(Person $person)
     {
@@ -69,10 +81,8 @@ class PersonController extends Controller
         return view('people.edit', compact('person', 'people', 'fatherId', 'motherId'));
     }
 
-    // --- AWAL PERUBAHAN ---
     public function update(UpdatePersonRequest $request, Person $person)
     {
-        // Validasi sudah berjalan otomatis.
         $validated = $request->validated();
 
         $personData = collect($validated)->except(['father_id', 'mother_id'])->all();
@@ -82,7 +92,6 @@ class PersonController extends Controller
 
         return redirect()->route('people.index')->with('success', 'Data anggota keluarga berhasil diperbarui.');
     }
-    // --- AKHIR PERUBAHAN ---
 
     public function destroy(Person $person)
     {
