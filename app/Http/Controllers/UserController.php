@@ -44,7 +44,12 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        $people = Person::orderBy('name')->get();
+        // --- AWAL PERUBAHAN ---
+        // Ambil semua data Person, dan sertakan informasi user yang tertaut (jika ada)
+        // untuk menghindari query N+1 di dalam view.
+        $people = Person::with('user')->orderBy('name')->get();
+        // --- AKHIR PERUBAHAN ---
+        
         return view('users.edit', compact('user', 'people'));
     }
 

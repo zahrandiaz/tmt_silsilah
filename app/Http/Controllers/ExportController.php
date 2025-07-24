@@ -11,6 +11,15 @@ class ExportController extends Controller
     public function exportGedcom()
     {
         $people = Person::all();
+
+        // --- AWAL PERUBAHAN ---
+        // 1. Periksa apakah ada data untuk diekspor.
+        if ($people->isEmpty()) {
+            // Jika tidak ada, kembalikan pengguna dengan pesan error.
+            return back()->with('error', 'Tidak ada data silsilah yang bisa diekspor.');
+        }
+        // --- AKHIR PERUBAHAN ---
+
         $relationships = Relationship::all();
         $families = $relationships->groupBy('family_unit_id');
 
@@ -21,7 +30,7 @@ class ExportController extends Controller
         $gedcomContent .= "2 VERS 5.5.1\n";
         $gedcomContent .= "2 FORM LINEAGE-LINKED\n";
 
-        // 1. Tambahkan semua individu (INDI)
+        // 2. Tambahkan semua individu (INDI)
         foreach ($people as $person) {
             $gedcomContent .= "0 @I{$person->id}@ INDI\n";
             $gedcomContent .= "1 NAME {$person->name}\n";
@@ -44,7 +53,7 @@ class ExportController extends Controller
             }
         }
 
-        // 2. Tambahkan semua keluarga (FAM) dan hubungannya
+        // 3. Tambahkan semua keluarga (FAM) dan hubungannya
         foreach ($families as $familyUnitId => $members) {
             $gedcomContent .= "0 @F{$familyUnitId}@ FAM\n";
 

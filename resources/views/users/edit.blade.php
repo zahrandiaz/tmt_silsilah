@@ -26,8 +26,19 @@
                             <select name="person_id" id="person_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                                 <option value="">-- Tidak Ditautkan --</option>
                                 @foreach ($people as $person)
-                                    <option value="{{ $person->id }}" @selected($user->person_id == $person->id)>
+                                    @php
+                                        // Cek apakah person ini sudah ditautkan ke user lain
+                                        $isLinkedToOtherUser = $person->user && $person->user->id !== $user->id;
+                                    @endphp
+                                    <option 
+                                        value="{{ $person->id }}" 
+                                        @selected($user->person_id == $person->id)
+                                        @disabled($isLinkedToOtherUser)
+                                    >
                                         {{ $person->name }}
+                                        @if ($isLinkedToOtherUser)
+                                            (Ditautkan ke: {{ $person->user->name }})
+                                        @endif
                                     </option>
                                 @endforeach
                             </select>

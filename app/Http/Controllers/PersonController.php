@@ -48,8 +48,12 @@ class PersonController extends Controller
 
     public function show(Person $person)
     {
-        $ancestorTree = $person->getAncestorTree();
-        return view('people.show', compact('person', 'ancestorTree'));
+        // --- AWAL PERUBAHAN ---
+        $breadcrumbs = $person->getBreadcrumbs();
+        // Variabel $ancestorTree tidak lagi kita perlukan di sini,
+        // karena view silsilah sudah memanggilnya secara internal.
+        return view('people.show', compact('person', 'breadcrumbs'));
+        // --- AKHIR PERUBAHAN ---
     }
 
     public function edit(Person $person)

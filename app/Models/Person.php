@@ -122,4 +122,32 @@ class Person extends Model
 
         return $descendantIds;
     }
+
+    /**
+     * Mengambil daftar leluhur dalam urutan yang benar untuk breadcrumbs.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getBreadcrumbs(): Collection
+    {
+        $breadcrumbs = collect();
+        $current = $this;
+
+        // Terus berjalan ke atas selama orang tua masih ada.
+        while ($parent = $current->father() ?? $current->mother()) {
+            $breadcrumbs->push($parent);
+            $current = $parent;
+        }
+
+        // Balik urutan array agar leluhur terjauh ada di awal.
+        return $breadcrumbs->reverse();
+    }
+
+    /**
+     * Mendefinisikan bahwa satu Person bisa memiliki satu User.
+     */
+    public function user()
+    {
+        return $this->hasOne(User::class);
+    }
 }
