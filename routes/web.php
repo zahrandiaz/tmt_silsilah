@@ -6,13 +6,16 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\PhotoController;
+use App\Http\Controllers\SilsilahController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckSilsilahPrivacy;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+
+//Route::get('/', function () {
+//    return view('welcome');
+//});
+Route::get('/', [SilsilahController::class, 'index'])->name('silsilah.index');
 
 Route::get('/dashboard', function () {
     return view('dashboard');

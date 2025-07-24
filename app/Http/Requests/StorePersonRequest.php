@@ -32,6 +32,7 @@ class StorePersonRequest extends FormRequest
             'biography' => 'nullable|string',
             'father_id' => 'nullable|exists:people,id',
             'mother_id' => 'nullable|exists:people,id',
+            'is_key_figure' => 'nullable|boolean',
         ];
     }
 }

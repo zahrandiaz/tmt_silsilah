@@ -84,6 +84,16 @@
                                 <textarea name="biography" id="biography" rows="4" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('biography', $person->biography) }}</textarea>
                             </div>
 
+                            <div class="mt-4">
+                                <label for="is_key_figure" class="inline-flex items-center">
+                                    <input id="is_key_figure" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="is_key_figure" value="1"
+                                        {{-- Untuk form edit, tambahkan kondisi checked --}}
+                                        @if(isset($person) && old('is_key_figure', $person->is_key_figure)) checked @endif
+                                    >
+                                    <span class="ms-2 text-sm text-gray-600">{{ __('Tandai sebagai Tokoh Kunci (tampil di halaman depan)') }}</span>
+                                </label>
+                            </div>
+
                             <div class="flex items-center justify-end mt-4">
                                 <a href="{{ route('people.index') }}" class="text-sm text-gray-600 hover:text-gray-900 mr-4">Batal</a>
                                 {{-- AWAL PERUBAHAN --}}

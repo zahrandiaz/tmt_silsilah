@@ -34,6 +34,7 @@ class UpdatePersonRequest extends FormRequest
             'biography' => 'nullable|string',
             'father_id' => ['nullable', 'exists:people,id', 'different:'.$person->id, 'not_in:'.implode(',', $person->getDescendantIds())],
             'mother_id' => ['nullable', 'exists:people,id', 'different:'.$person->id, 'not_in:'.implode(',', $person->getDescendantIds())],
+            'is_key_figure' => 'nullable|boolean',
         ];
     }
 }

@@ -147,4 +147,34 @@ class Person extends Model
     {
         return $this->hasOne(User::class);
     }
+
+    // --- TAMBAHKAN METHOD BARU INI ---
+
+    /**
+     * Menghitung kedalaman generasi keturunan terpanjang dari orang ini.
+     * Generasi orang ini dihitung sebagai 1.
+     *
+     * @return int
+     */
+    public function getMaxDescendantDepth(): int
+    {
+        $children = $this->allChildren();
+
+        if ($children->isEmpty()) {
+            // Jika tidak punya anak, kedalamannya adalah 1 (dirinya sendiri).
+            return 1;
+        }
+
+        $maxDepth = 0;
+        foreach ($children as $child) {
+            // Cari kedalaman maksimum di antara semua anak.
+            $depth = $child->getMaxDescendantDepth();
+            if ($depth > $maxDepth) {
+                $maxDepth = $depth;
+            }
+        }
+
+        // Tambahkan 1 (untuk generasi saat ini) ke kedalaman maksimum anak.
+        return 1 + $maxDepth;
+    }
 }

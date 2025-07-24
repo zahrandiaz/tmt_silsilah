@@ -42,6 +42,8 @@ class PersonController extends Controller
         $validated = $request->validated();
 
         $personData = collect($validated)->except(['father_id', 'mother_id'])->all();
+        // Tambahkan baris ini untuk menangani checkbox
+        $personData['is_key_figure'] = $request->has('is_key_figure');
         $person = Person::create($personData);
         
         $this->syncParents($person, $request->father_id, $request->mother_id);
@@ -86,6 +88,8 @@ class PersonController extends Controller
         $validated = $request->validated();
 
         $personData = collect($validated)->except(['father_id', 'mother_id'])->all();
+        // Tambahkan baris ini untuk menangani checkbox
+        $personData['is_key_figure'] = $request->has('is_key_figure');
         $person->update($personData);
 
         $this->syncParents($person, $request->father_id, $request->mother_id);
