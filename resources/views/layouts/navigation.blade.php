@@ -13,6 +13,10 @@
                         {{ __('Silsilah') }}
                     </x-nav-link>
 
+                    <x-nav-link :href="route('pdf.export.form')" :active="request()->routeIs('pdf.export.form')">
+                        {{ __('Cetak PDF') }}
+                    </x-nav-link>
+
                     {{-- Tampilkan link ini hanya jika user sudah login --}}
                     @auth
                         <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">

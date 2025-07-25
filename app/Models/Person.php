@@ -177,4 +177,32 @@ class Person extends Model
         // Tambahkan 1 (untuk generasi saat ini) ke kedalaman maksimum anak.
         return 1 + $maxDepth;
     }
+
+    /**
+     * Mengambil semua keturunan beserta pasangan hingga kedalaman (level) tertentu.
+     *
+     * @param int $maxLevel
+     * @param int $currentLevel
+     * @return \Illuminate\Support\Collection
+     */
+    public function getDescendantsWithSpouses(int $maxLevel, int $currentLevel = 0)
+    {
+        // Hentikan rekursi jika sudah mencapai level maksimal
+        if ($currentLevel > $maxLevel) {
+            return collect();
+        }
+
+        // Ambil semua anak dari person saat ini
+        $children = $this->allChildren();
+        $descendants = $children;
+
+        // Untuk setiap anak, panggil fungsi ini lagi secara rekursif
+        foreach ($children as $child) {
+            $descendants = $descendants->merge(
+                $child->getDescendantsWithSpouses($maxLevel, $currentLevel + 1)
+            );
+        }
+
+        return $descendants;
+    }
 }
