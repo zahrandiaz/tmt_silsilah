@@ -141,11 +141,46 @@
                     </div>
                 </div>
 
+                {{-- GUNAKAN BLOK INI SEBAGAI PENGGANTI --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Pasangan & Keturunan</h3>
                     <div class="silsilah-container">
-                        @if($person->spouses()->isNotEmpty() || $person->allChildren()->isNotEmpty())
-                            @include('partials.descendant-node', ['person' => $person, 'level' => 0])
+                        @php
+                            // Ambil semua anak dari tokoh ini dan jadikan koleksi yang bisa dimodifikasi.
+                            $remainingChildren = $person->allChildren()->keyBy('id');
+                        @endphp
+
+                        @if($person->spouses()->isNotEmpty() || $remainingChildren->isNotEmpty())
+                            
+                            {{-- Bagian 1: Loop untuk setiap unit keluarga dengan pasangan --}}
+                            @foreach($person->spouses() as $spouse)
+                                @php
+                                    $childrenOfThisUnion = $person->childrenWith($spouse);
+                                    // Hapus anak-anak ini dari daftar sisa, agar tidak ditampilkan dua kali.
+                                    foreach($childrenOfThisUnion as $child) {
+                                        $remainingChildren->forget($child->id);
+                                    }
+                                @endphp
+                                
+                                {{-- Tampilkan unit keluarga ini (person + spouse + anak-anak mereka) --}}
+                                @include('partials.descendant-node', [
+                                    'person'   => $person,
+                                    'spouse'   => $spouse,
+                                    'children' => $childrenOfThisUnion,
+                                    'level'    => 0
+                                ])
+                            @endforeach
+
+                            {{-- Bagian 2: Tampilkan anak-anak yang tersisa (tanpa pasangan yang tercatat) --}}
+                            @if($remainingChildren->isNotEmpty())
+                                @include('partials.descendant-node', [
+                                    'person'   => $person,
+                                    'spouse'   => null, // Tidak ada pasangan untuk unit ini
+                                    'children' => $remainingChildren,
+                                    'level'    => 0
+                                ])
+                            @endif
+
                         @else
                             <p class="text-sm text-gray-500">Belum ada data pasangan atau keturunan yang ditambahkan.</p>
                         @endif
@@ -184,7 +219,7 @@
                 </button>
 
                 <div class="p-4 flex-grow flex items-center justify-center">
-                    <img :src="largeImageUrl" alt="Tampilan Penuh" class="max-w-full max-h-full object-contain">
+                    <img :src="largeImageUrl" alt="Tampilan Penuh" class="w-auto h-auto max-w-4xl max-h-[85vh] object-contain rounded-md">
                 </div>
             </div>
         </div>

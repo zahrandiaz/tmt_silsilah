@@ -205,4 +205,37 @@ class Person extends Model
 
         return $descendants;
     }
+
+    /**
+     * Mengambil anak-anak yang dimiliki bersama pasangan (spouse) tertentu.
+     *
+     * @param Person $spouse
+     * @return Collection
+     */
+    public function childrenWith(Person $spouse): Collection
+    {
+        // 1. Cari semua unit keluarga di mana 'person' ini adalah partner
+        $myFamilyUnitIds = Relationship::where('person_id', $this->id)
+            ->where('role_in_family', 'partner')
+            ->pluck('family_unit_id');
+
+        // 2. Dari unit-unit tersebut, cari satu unit yang juga berisi 'spouse' sebagai partner
+        $familyUnitId = Relationship::whereIn('family_unit_id', $myFamilyUnitIds)
+            ->where('person_id', $spouse->id)
+            ->where('role_in_family', 'partner')
+            ->value('family_unit_id');
+
+        // 3. Jika tidak ada unit keluarga bersama, kembalikan koleksi kosong
+        if (!$familyUnitId) {
+            return collect();
+        }
+
+        // 4. Ambil semua ID anak dari unit keluarga yang spesifik tersebut
+        $childrenIds = Relationship::where('family_unit_id', $familyUnitId)
+            ->where('role_in_family', 'child')
+            ->pluck('person_id');
+            
+        // 5. Kembalikan model Person dari anak-anak tersebut
+        return Person::whereIn('id', $childrenIds)->orderBy('birth_date')->get();
+    }
 }
