@@ -11,25 +11,29 @@ class SilsilahController extends Controller
     /**
      * Menampilkan halaman utama silsilah (pintu gerbang).
      */
-    public function index()
+    public function index(Request $request) // Add Request $request here
     {
-        // Ambil tokoh kunci
-        $keyFigures = Person::with('photos')
-            ->where('is_key_figure', true)
-            ->orderBy('name')
-            ->get();
+        $searchQuery = $request->input('search');
 
-        // --- AWAL LOGIKA STATISTIK ---
+        // Modify the Key Figures query
+        $keyFiguresQuery = Person::with('photos')
+            ->orderBy('name');
 
-        // 1. Hitung Total Individu
+        // If there is a search query, filter the results
+        if ($searchQuery) {
+            $keyFiguresQuery->where('name', 'like', '%' . $searchQuery . '%');
+        } else {
+            // If not searching, only show designated key figures
+            $keyFiguresQuery->where('is_key_figure', true);
+        }
+
+        $keyFigures = $keyFiguresQuery->get();
+
+        // --- STATS LOGIC (remains the same) ---
         $totalPeople = Person::count();
-
-        // 2. Hitung Jumlah Generasi
         $totalGenerations = $this->calculateTotalGenerations();
 
-        // --- AKHIR LOGIKA STATISTIK ---
-
-        return view('welcome', compact('keyFigures', 'totalPeople', 'totalGenerations'));
+        return view('welcome', compact('keyFigures', 'totalPeople', 'totalGenerations', 'searchQuery'));
     }
 
     /**

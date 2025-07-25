@@ -18,7 +18,7 @@
                             <!-- Nama -->
                             <div>
                                 <x-input-label for="name" :value="__('Nama Lengkap')" />
-                                <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus />
+                                <x-text-input id="name" class="block mt-1 w-full capitalize-input" type="text" name="name" :value="old('name')" required autofocus />
                                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
                             </div>
 

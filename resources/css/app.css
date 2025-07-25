@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Ganti di akhir file app.css */
+.capitalize-input::placeholder {
+    text-transform: none; /* Biarkan placeholder tetap normal */
+}
+.capitalize-input {
+    text-transform: uppercase; /* Ubah dari capitalize menjadi uppercase */
+}
