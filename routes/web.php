@@ -7,6 +7,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\SilsilahController;
+use App\Http\Controllers\PdfController; 
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckSilsilahPrivacy;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,8 @@ Route::middleware('auth')->group(function () {
     // --- AKHIR PENAMBAHAN RUTE FOTO ---
     
     // Route::resource('people', ...) sudah dipindahkan ke atas
+    Route::get('/export-pdf', [PdfController::class, 'showExportForm'])->name('pdf.export.form');
+    Route::post('/export-pdf', [PdfController::class, 'generatePdf'])->name('pdf.generate');
 
     Route::middleware(AdminMiddleware::class)->group(function () {
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
