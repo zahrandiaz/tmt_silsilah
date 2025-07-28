@@ -6,7 +6,7 @@
             @if(isset($announcement))
             <div class="mb-6 bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4" role="alert">
                 <p class="font-bold">Pengumuman</p>
-                <p>{{ $announcement->content }}</p>
+                <div class="prose dark:prose-invert max-w-none">{!! $announcement->content !!}</div>
             </div>
             @endif
 
