@@ -8,10 +8,15 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\SilsilahController;
 use App\Http\Controllers\PdfController; 
+use App\Http\Controllers\PageController; // <-- TAMBAHKAN INI
+use App\Http\Controllers\AnnouncementController; // <-- TAMBAHKAN INI
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckSilsilahPrivacy;
 use Illuminate\Support\Facades\Route;
 
+// Rute untuk Halaman Statis (Publik)
+Route::get('/tentang', [PageController::class, 'about'])->name('pages.about');
+Route::get('/donasi', [PageController::class, 'donation'])->name('pages.donation');
 
 //Route::get('/', function () {
 //    return view('welcome');
@@ -56,6 +61,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
         Route::resource('users', UserController::class)->except(['show']);
         Route::get('/export/gedcom', [ExportController::class, 'exportGedcom'])->name('export.gedcom');
+    
+        // <-- announcements -->
+        Route::get('announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
+        Route::post('announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
     });
 });
 

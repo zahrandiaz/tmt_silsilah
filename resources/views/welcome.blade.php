@@ -2,6 +2,14 @@
 <x-guest-layout>
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            {{-- [TAMBAHKAN BLOK INI] --}}
+            @if(isset($announcement))
+            <div class="mb-6 bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4" role="alert">
+                <p class="font-bold">Pengumuman</p>
+                <p>{{ $announcement->content }}</p>
+            </div>
+            @endif
+
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 md:p-8 text-gray-900 dark:text-gray-100">
                     

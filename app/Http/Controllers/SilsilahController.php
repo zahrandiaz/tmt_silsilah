@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Person;
+use App\Models\Announcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -11,7 +12,7 @@ class SilsilahController extends Controller
     /**
      * Menampilkan halaman utama silsilah (pintu gerbang).
      */
-    public function index(Request $request) // Add Request $request here
+    public function index(Request $request)
     {
         $searchQuery = $request->input('search');
 
@@ -33,7 +34,11 @@ class SilsilahController extends Controller
         $totalPeople = Person::count();
         $totalGenerations = $this->calculateTotalGenerations();
 
-        return view('welcome', compact('keyFigures', 'totalPeople', 'totalGenerations', 'searchQuery'));
+        // [PERBAIKAN 1] Gunakan angka 1 untuk perbandingan yang lebih pasti.
+        $announcement = Announcement::where('is_active', 1)->latest()->first();
+        
+        // [PERBAIKAN 2] Tambahkan variabel 'announcement' ke dalam compact().
+        return view('welcome', compact('keyFigures', 'totalPeople', 'totalGenerations', 'searchQuery', 'announcement'));
     }
 
     /**
