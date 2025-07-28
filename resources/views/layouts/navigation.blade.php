@@ -28,8 +28,13 @@
                             <x-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.index')">
                                 {{ __('Pengaturan') }}
                             </x-nav-link>
+
                             <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
                                 {{ __('Manajemen Pengguna') }}
+                            </x-nav-link>
+
+                            <x-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">
+                                {{ __('Pengumuman') }}
                             </x-nav-link>
                         @endif
                     @endauth

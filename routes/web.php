@@ -63,8 +63,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/export/gedcom', [ExportController::class, 'exportGedcom'])->name('export.gedcom');
     
         // <-- announcements -->
-        Route::get('announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
-        Route::post('announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
+        Route::resource('announcements', AnnouncementController::class)->except(['show']);
     });
 });
 
