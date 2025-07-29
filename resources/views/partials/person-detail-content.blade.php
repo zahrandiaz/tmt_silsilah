@@ -93,21 +93,48 @@
                                     <h4 class="text-md font-semibold text-gray-800 mb-3 border-b pb-2">{{ $category }}</h4>
                                     <ul class="space-y-3">
                                         @foreach ($photosByCategory[$category] as $photo)
-                                            <li class="flex items-center space-x-4 p-2 rounded-md hover:bg-gray-50">
-                                                <img 
-                                                    src="{{ asset('storage/' . $photo->image_path) }}" 
-                                                    alt="{{ $photo->description ?? 'Foto ' . $person->name }}" 
-                                                    class="w-20 h-20 object-cover rounded-md cursor-pointer flex-shrink-0"
-                                                    @click="largeImageUrl = '{{ asset('storage/' . $photo->image_path) }}'; showModal = true">
-                                                <div class="flex-grow">
-                                                    <p class="text-sm text-gray-700">{{ $photo->description }}</p>
+                                            <li class="flex items-start sm:items-center space-x-4 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                {{-- Gambar --}}
+                                                <div class="relative flex-shrink-0">
+                                                    <img 
+                                                        src="{{ asset('storage/' . $photo->image_path) }}" 
+                                                        alt="{{ $photo->description ?? 'Foto ' . $person->name }}" 
+                                                        class="w-20 h-20 object-cover rounded-md cursor-pointer"
+                                                        @click="largeImageUrl = '{{ asset('storage/' . $photo->image_path) }}'; showModal = true">
+                                                    
+                                                    {{-- Badge Foto Profil --}}
+                                                    @if($photo->is_profile_picture)
+                                                        <span class="absolute -top-2 -right-2 inline-flex items-center rounded-full bg-blue-500 px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-blue-700/10">
+                                                            Profil
+                                                        </span>
+                                                    @endif
                                                 </div>
-                                                @can('delete', $person)
-                                                    <div class="flex-shrink-0">
+                                                
+                                                {{-- Deskripsi --}}
+                                                <div class="flex-grow">
+                                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ $photo->description }}</p>
+                                                </div>
+
+                                                {{-- Tombol Aksi --}}
+                                                @can('update', $person)
+                                                    <div class="flex-shrink-0 flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2 mt-2 sm:mt-0">
+                                                        {{-- Tombol Jadikan Foto Profil (hanya muncul jika BUKAN foto profil saat ini) --}}
+                                                        @if(!$photo->is_profile_picture)
+                                                            <form action="{{ route('photos.set_as_profile', $photo) }}" method="POST">
+                                                                @csrf
+                                                                <button type="submit" class="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500">
+                                                                    Jadikan Profil
+                                                                </button>
+                                                            </form>
+                                                        @endif
+                                                        
+                                                        {{-- Tombol Hapus --}}
                                                         <form action="{{ route('photos.destroy', $photo) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus foto ini?');">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <x-danger-button type="submit" class="text-xs !py-1 !px-2">Hapus</x-danger-button>
+                                                            <button type="submit" class="text-xs px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-500">
+                                                                Hapus
+                                                            </button>
                                                         </form>
                                                     </div>
                                                 @endcan

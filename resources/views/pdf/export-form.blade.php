@@ -40,6 +40,13 @@
                                 </p>
                                 <x-input-error :messages="$errors->get('generations')" class="mt-2" />
                             </div>
+
+                            <div class="mt-4">
+                                <label for="with_photos" class="inline-flex items-center">
+                                    <input id="with_photos" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="with_photos" value="1" checked>
+                                    <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Sertakan Foto Profil') }}</span>
+                                </label>
+                            </div>
                         </div>
 
                         <div class="mt-6 flex justify-end">

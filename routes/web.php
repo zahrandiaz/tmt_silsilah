@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
     // --- AWAL PENAMBAHAN RUTE FOTO ---
     Route::post('/people/{person}/photos', [PhotoController::class, 'store'])->name('photos.store');
     Route::delete('/photos/{photo}', [PhotoController::class, 'destroy'])->name('photos.destroy');
+    Route::post('/photos/{photo}/set-as-profile', [PhotoController::class, 'setAsProfilePicture'])->name('photos.set_as_profile');
     // --- AKHIR PENAMBAHAN RUTE FOTO ---
     
     // Route::resource('people', ...) sudah dipindahkan ke atas

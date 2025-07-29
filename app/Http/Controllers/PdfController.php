@@ -22,24 +22,26 @@ class PdfController extends Controller
      */
     public function generatePdf(Request $request)
     {
-        // 1. Validasi input
-        $request->validate([
+        // 1. Validasi input, tambahkan 'with_photos'
+        $validated = $request->validate([
             'person_id' => 'required|exists:people,id',
             'generations' => 'required|integer|min:0',
+            'with_photos' => 'nullable|boolean',
         ]);
 
         // 2. Ambil data yang dibutuhkan
-        $rootPerson = Person::findOrFail($request->input('person_id'));
-        $maxGenerations = (int) $request->input('generations');
+        $rootPerson = Person::findOrFail($validated['person_id']);
+        $maxGenerations = (int) $validated['generations'];
+        $withPhotos = (bool) ($validated['with_photos'] ?? false);
 
-        // 3. Panggil method baru di model untuk membangun data laporan
-        // (Method ini akan kita buat di langkah selanjutnya)
-        $reportLines = $rootPerson->generateIndentedReport($maxGenerations);
+        // 3. Panggil method di model untuk membangun data laporan
+        $reportLines = $rootPerson->generateIndentedReport($maxGenerations, $withPhotos);
 
         // 4. Siapkan data untuk dikirim ke view
         $data = [
             'rootPerson' => $rootPerson,
             'reportLines' => $reportLines,
+            'withPhotos' => $withPhotos,
         ];
 
         // 5. Gunakan library DomPDF untuk membuat PDF
