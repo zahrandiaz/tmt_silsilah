@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Person;
 use App\Models\Photo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Intervention\Image\ImageManager;
@@ -67,5 +68,24 @@ class PhotoController extends Controller
         $photo->delete();
 
         return back()->with('success', 'Foto berhasil dihapus.');
+    }
+
+    /**
+     * Menetapkan sebuah foto sebagai foto profil.
+     */
+    public function setAsProfilePicture(Request $request, Photo $photo)
+    {
+        // Otorisasi: pastikan user boleh mengupdate data person ini
+        $this->authorize('update', $photo->person);
+
+        DB::transaction(function () use ($photo) {
+            // 1. Nonaktifkan semua foto profil lain untuk orang ini
+            $photo->person->photos()->update(['is_profile_picture' => false]);
+            
+            // 2. Aktifkan foto yang dipilih sebagai foto profil
+            $photo->update(['is_profile_picture' => true]);
+        });
+
+        return back()->with('success', 'Foto profil berhasil diperbarui.');
     }
 }

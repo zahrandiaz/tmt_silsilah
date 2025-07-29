@@ -10,8 +10,19 @@ class Photo extends Model
 {
     use HasFactory;
 
-    // Izinkan semua kolom diisi untuk kemudahan
-    protected $guarded = [];
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    // [MODIFIKASI] Menggunakan $fillable untuk keamanan dan menambahkan is_profile_picture
+    protected $fillable = [
+        'person_id', 
+        'image_path', 
+        'category', 
+        'description', 
+        'is_profile_picture'
+    ];
 
     /**
      * Mendefinisikan bahwa setiap foto dimiliki oleh satu Person.

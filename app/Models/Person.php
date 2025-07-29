@@ -100,7 +100,8 @@ class Person extends Model
         $childrenIds = Relationship::whereIn('family_unit_id', $familyUnitIds)
             ->where('role_in_family', 'child')->pluck('person_id');
 
-        return Person::whereIn('id', $childrenIds)->orderBy('birth_date')->get();
+        // Mengurutkan berdasarkan tanggal lahir, dengan data kosong (null) di akhir
+        return Person::whereIn('id', $childrenIds)->orderByRaw('birth_date IS NULL, birth_date ASC')->get();
     }
 
     public function getAncestorTree(): array
@@ -236,7 +237,8 @@ class Person extends Model
             ->pluck('person_id');
             
         // 5. Kembalikan model Person dari anak-anak tersebut
-        return Person::whereIn('id', $childrenIds)->orderBy('birth_date')->get();
+        // Mengurutkan berdasarkan tanggal lahir, dengan data kosong (null) di akhir
+        return Person::whereIn('id', $childrenIds)->orderByRaw('birth_date IS NULL, birth_date ASC')->get();
     }
 
     /**
@@ -337,55 +339,79 @@ class Person extends Model
         return false;
     }
 
+     /**
+     * Mendapatkan foto profil yang telah ditentukan.
+     * Jika tidak ada, akan mengembalikan foto pertama yang diunggah.
+     *
+     * @return Model|null
+     */
+    public function profilePicture()
+    {
+        // Cari foto yang ditandai sebagai foto profil
+        $profilePic = $this->photos()->where('is_profile_picture', true)->first();
+
+        // Jika tidak ada, kembalikan foto pertama sebagai fallback
+        return $profilePic ?: $this->photos()->first();
+    }
+
     /**
      * Menghasilkan data laporan keturunan berinden dalam bentuk array.
      *
      * @param int $maxGenerations
      * @return array
      */
-    public function generateIndentedReport(int $maxGenerations): array
+    public function generateIndentedReport(int $maxGenerations, bool $withPhotos = false): array
     {
         $reportLines = [];
-        $personCounter = 1;
 
-        // Fungsi rekursif internal untuk membangun laporan
-        $buildLines = function ($person, $level, $prefix = '') use (&$buildLines, &$reportLines, &$personCounter, $maxGenerations) {
-            // Tambahkan baris untuk orang saat ini
+        $buildLines = function ($person, $level, $prefix = '1') use (&$buildLines, &$reportLines, $maxGenerations, $withPhotos) {
+            $profilePicture = $withPhotos ? $person->profilePicture() : null;
+
             $reportLines[] = [
                 'type' => 'person',
                 'level' => $level,
-                'prefix' => $prefix,
+                'number' => $prefix, // Nomor hierarkis
                 'person' => $person,
-                'counter' => $personCounter++,
+                'photo_path' => $profilePicture?->image_path,
             ];
 
-            // Berhenti jika sudah mencapai batas generasi
             if ($level >= $maxGenerations) {
                 return;
             }
 
-            // Proses setiap unit keluarga (dengan pasangan)
-            $childIndex = 1;
+            $childCounter = 1;
+            $unionedChildren = collect();
+
             foreach ($person->spouses() as $spouse) {
                 $children = $person->childrenWith($spouse);
                 if ($children->isNotEmpty()) {
-                    // Tambahkan baris untuk pasangan
+                    $spouseProfilePicture = $withPhotos ? $spouse->profilePicture() : null;
                     $reportLines[] = [
                         'type' => 'spouse',
                         'level' => $level,
                         'spouse' => $spouse,
+                        'photo_path' => $spouseProfilePicture?->image_path,
                     ];
-                    // Proses anak-anak dari unit ini
+
                     foreach ($children as $child) {
-                        $newPrefix = ($prefix ? $prefix . '.' : '') . $childIndex;
+                        $newPrefix = $prefix . '.' . $childCounter++;
                         $buildLines($child, $level + 1, $newPrefix);
-                        $childIndex++;
+                        $unionedChildren->push($child);
                     }
                 }
             }
+
+            // Menangani anak tanpa pasangan yang tercatat
+            $remainingChildren = $person->allChildren()->diff($unionedChildren);
+            if($remainingChildren->isNotEmpty()) {
+                 $reportLines[] = [ 'type' => 'no_spouse_separator', 'level' => $level ];
+                 foreach($remainingChildren as $child) {
+                    $newPrefix = $prefix . '.' . $childCounter++;
+                    $buildLines($child, $level + 1, $newPrefix);
+                 }
+            }
         };
 
-        // Mulai proses dari orang utama (akar)
         $buildLines($this, 0);
 
         return $reportLines;

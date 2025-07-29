@@ -55,7 +55,25 @@
                                 <a href="{{ route('people.show', $figure) }}" class="group block text-center transition-transform duration-300 transform hover:scale-105">
                                     <div class="relative w-40 h-40 mx-auto">
                                         @if($figure->photos->isNotEmpty())
-                                            <img src="{{ asset('storage/' . $figure->photos->first()->image_path) }}" alt="{{ $figure->name }}" class="w-40 h-40 rounded-full object-cover shadow-lg mx-auto">
+                                            @php
+                                                $profilePicture = $figure->profilePicture();
+                                            @endphp
+                                            @if($profilePicture)
+                                                <img src="{{ asset('storage/' . $profilePicture->image_path) }}" alt="{{ $figure->name }}" class="w-40 h-40 rounded-full object-cover shadow-lg mx-auto">
+                                            @else
+                                                {{-- Tampilan placeholder jika tidak ada foto sama sekali --}}
+                                                <div class="w-40 h-40 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shadow-lg mx-auto">
+                                                    <span class="text-4xl font-bold text-gray-500 dark:text-gray-400">
+                                                        @php
+                                                            $words = explode(' ', $figure->name);
+                                                            $initials = '';
+                                                            if (isset($words[0])) $initials .= strtoupper(substr($words[0], 0, 1));
+                                                            if (isset($words[1])) $initials .= strtoupper(substr($words[1], 0, 1));
+                                                        @endphp
+                                                        {{ $initials ?: '?' }}
+                                                    </span>
+                                                </div>
+                                            @endif
                                         @else
                                             <div class="w-40 h-40 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shadow-lg mx-auto">
                                                 <span class="text-4xl font-bold text-gray-500 dark:text-gray-400">
