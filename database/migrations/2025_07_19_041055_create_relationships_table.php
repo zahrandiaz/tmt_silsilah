@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('relationships', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('family_unit_id');
+            $table->string('family_unit_id');
             $table->foreignId('person_id')->constrained('people')->onDelete('cascade');
             $table->enum('role_in_family', ['partner', 'child']);
             $table->timestamps();

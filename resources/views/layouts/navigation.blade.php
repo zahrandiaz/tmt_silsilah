@@ -36,6 +36,10 @@
                             <x-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">
                                 {{ __('Pengumuman') }}
                             </x-nav-link>
+
+                            <x-nav-link :href="route('import.gedcom.form')" :active="request()->routeIs('import.gedcom.form')">
+                                {{ __('Impor GEDCOM') }}
+                            </x-nav-link>
                         @endif
                     @endauth
                 </div>
