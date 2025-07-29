@@ -9,7 +9,6 @@ class PersonPolicy
 {
     /**
      * Tentukan apakah pengguna bisa melihat, mengedit, atau menghapus data seseorang.
-     * Kita akan menggabungkan semua logika ke dalam satu method `manage` untuk konsistensi.
      */
     private function canManage(User $user, Person $person): bool
     {
@@ -18,36 +17,40 @@ class PersonPolicy
             return true;
         }
 
-        // 2. Operator bisa mengelola orang dalam lingkup aksesnya.
+        // 2. Operator bisa mengelola orang dalam lingkup aksesnya DAN pasangannya.
         if ($user->role === 'operator') {
-            // Memanggil method canggih yang sudah kita buat di model Person.
-            return $person->isWithinOperatorScope($user);
+            // Cek pertama: Apakah orang ini sendiri berada dalam lingkup?
+            if ($person->isWithinOperatorScope($user)) {
+                return true;
+            }
+
+            // [PENAMBAHAN LOGIKA]
+            // Cek kedua: Jika bukan, apakah orang ini adalah PASANGAN dari seseorang yang berada dalam lingkup?
+            foreach ($person->spouses() as $spouse) {
+                if ($spouse->isWithinOperatorScope($user)) {
+                    return true; // Izin diberikan jika pasangannya berada dalam lingkup.
+                }
+            }
         }
 
         // 3. User biasa bisa mengelola dirinya sendiri, pasangan, dan anak-anaknya.
         if ($user->role === 'user') {
-            // Jika akun user tidak tertaut ke data Person, maka tidak punya hak akses.
             if (!$user->person_id) {
                 return false;
             }
-
-            // User bisa mengelola data person yang tertaut dengan akunnya (dirinya sendiri).
             if ($user->person_id === $person->id) {
                 return true;
             }
 
-            // Ambil model Person yang merepresentasikan user yang sedang login.
             $userAsPerson = Person::find($user->person_id);
             if (!$userAsPerson) {
                 return false;
             }
 
-            // Cek apakah $person yang akan diubah adalah pasangan dari user.
             if ($userAsPerson->spouses()->contains($person)) {
                 return true;
             }
 
-            // Cek apakah $person yang akan diubah adalah anak dari user.
             if ($userAsPerson->allChildren()->contains($person)) {
                 return true;
             }

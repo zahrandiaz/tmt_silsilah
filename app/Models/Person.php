@@ -336,4 +336,58 @@ class Person extends Model
 
         return false;
     }
+
+    /**
+     * Menghasilkan data laporan keturunan berinden dalam bentuk array.
+     *
+     * @param int $maxGenerations
+     * @return array
+     */
+    public function generateIndentedReport(int $maxGenerations): array
+    {
+        $reportLines = [];
+        $personCounter = 1;
+
+        // Fungsi rekursif internal untuk membangun laporan
+        $buildLines = function ($person, $level, $prefix = '') use (&$buildLines, &$reportLines, &$personCounter, $maxGenerations) {
+            // Tambahkan baris untuk orang saat ini
+            $reportLines[] = [
+                'type' => 'person',
+                'level' => $level,
+                'prefix' => $prefix,
+                'person' => $person,
+                'counter' => $personCounter++,
+            ];
+
+            // Berhenti jika sudah mencapai batas generasi
+            if ($level >= $maxGenerations) {
+                return;
+            }
+
+            // Proses setiap unit keluarga (dengan pasangan)
+            $childIndex = 1;
+            foreach ($person->spouses() as $spouse) {
+                $children = $person->childrenWith($spouse);
+                if ($children->isNotEmpty()) {
+                    // Tambahkan baris untuk pasangan
+                    $reportLines[] = [
+                        'type' => 'spouse',
+                        'level' => $level,
+                        'spouse' => $spouse,
+                    ];
+                    // Proses anak-anak dari unit ini
+                    foreach ($children as $child) {
+                        $newPrefix = ($prefix ? $prefix . '.' : '') . $childIndex;
+                        $buildLines($child, $level + 1, $newPrefix);
+                        $childIndex++;
+                    }
+                }
+            }
+        };
+
+        // Mulai proses dari orang utama (akar)
+        $buildLines($this, 0);
+
+        return $reportLines;
+    }
 }

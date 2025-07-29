@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/PdfController.php
 
 namespace App\Http\Controllers;
 
@@ -29,30 +28,24 @@ class PdfController extends Controller
             'generations' => 'required|integer|min:0',
         ]);
 
-        // 2. Ambil data root tanpa eager loading 'spouses' yang bermasalah
+        // 2. Ambil data yang dibutuhkan
         $rootPerson = Person::findOrFail($request->input('person_id'));
         $maxGenerations = (int) $request->input('generations');
 
-        // 3. Panggil method di model untuk mendapatkan semua model keturunan
-        $descendantsCollection = $rootPerson->getDescendantsWithSpouses($maxGenerations - 1);
+        // 3. Panggil method baru di model untuk membangun data laporan
+        // (Method ini akan kita buat di langkah selanjutnya)
+        $reportLines = $rootPerson->generateIndentedReport($maxGenerations);
 
-        // 4. Ambil semua ID dari koleksi keturunan
-        $descendantIds = $descendantsCollection->pluck('id');
-        
-        // 5. Lakukan SATU query untuk mengambil semua data, tapi tanpa ->with()
-        $tree = Person::whereIn('id', $descendantIds)->get();
-        
-        // 6. Siapkan data untuk dikirim ke view
+        // 4. Siapkan data untuk dikirim ke view
         $data = [
             'rootPerson' => $rootPerson,
-            'tree'       => $tree,
-            'all_people' => $tree->push($rootPerson)->keyBy('id') // Gabungkan semua orang dan buat lookup table
+            'reportLines' => $reportLines,
         ];
 
-        // 7. Gunakan library DomPDF untuk membuat PDF
+        // 5. Gunakan library DomPDF untuk membuat PDF
         $pdf = Pdf::loadView('pdf.silsilah-template', $data);
 
-        // 8. Kirim PDF ke browser untuk diunduh
-        return $pdf->download('silsilah-' . \Illuminate\Support\Str::slug($rootPerson->name) . '.pdf');
+        // 6. Kirim PDF ke browser untuk diunduh
+        return $pdf->download('laporan-silsilah-' . \Illuminate\Support\Str::slug($rootPerson->name) . '.pdf');
     }
 }
