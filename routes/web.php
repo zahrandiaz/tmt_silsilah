@@ -10,6 +10,7 @@ use App\Http\Controllers\SilsilahController;
 use App\Http\Controllers\PdfController; 
 use App\Http\Controllers\PageController; // <-- TAMBAHKAN INI
 use App\Http\Controllers\AnnouncementController; // <-- TAMBAHKAN INI
+use App\Http\Controllers\GedcomImportController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckSilsilahPrivacy;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +66,9 @@ Route::middleware('auth')->group(function () {
     
         // <-- announcements -->
         Route::resource('announcements', AnnouncementController::class)->except(['show']);
+
+        Route::get('/import/gedcom', [GedcomImportController::class, 'showForm'])->name('import.gedcom.form');
+        Route::post('/import/gedcom', [GedcomImportController::class, 'import'])->name('import.gedcom.store');
     });
 });
 

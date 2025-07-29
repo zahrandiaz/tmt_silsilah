@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,15 +13,19 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Panggil seeder untuk pengaturan default
+        $this->call(SettingSeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-        
-        $this->call([
-        SettingSeeder::class,
-    ]);
+        // [TAMBAHKAN BLOK INI]
+        // Cari atau buat pengguna Admin utama
+        User::firstOrCreate(
+            ['email' => 'admin@example.com'], // Kunci unik untuk mencari
+            [
+                'name' => 'Admin Utama',
+                'password' => Hash::make('admin123'), // Ganti 'password' dengan password yang aman
+                'role' => 'admin',
+                'email_verified_at' => now(), // Langsung verifikasi email
+            ]
+        );
     }
 }
