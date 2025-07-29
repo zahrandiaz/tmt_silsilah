@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Person;
+use App\Models\OperatorAccessControl;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 
@@ -16,20 +18,19 @@ class UserController extends Controller
         return view('users.index', compact('users'));
     }
 
-    // Method baru untuk menampilkan form tambah pengguna
     public function create()
     {
         return view('users.create');
     }
 
-    // Method baru untuk menyimpan pengguna baru
     public function store(Request $request)
     {
+        // Validasi diperbarui untuk menyertakan 'operator'
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'in:user,admin'],
+            'role' => ['required', 'in:user,admin,operator'],
         ]);
 
         User::create([
@@ -44,31 +45,59 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        // --- AWAL PERUBAHAN ---
-        // Ambil semua data Person, dan sertakan informasi user yang tertaut (jika ada)
-        // untuk menghindari query N+1 di dalam view.
+        // Memuat relasi accessControl untuk efisiensi
+        $user->load('accessControl'); 
         $people = Person::with('user')->orderBy('name')->get();
-        // --- AKHIR PERUBAHAN ---
         
         return view('users.edit', compact('user', 'people'));
     }
 
     public function update(Request $request, User $user)
     {
+        // [PERUBAHAN BESAR] Logika validasi dan penyimpanan yang baru
         $validated = $request->validate([
-            'role' => 'required|in:admin,user',
+            'role' => 'required|in:admin,operator,user',
+            // Aturan untuk peran 'user'
             'person_id' => 'nullable|exists:people,id',
+            // Aturan untuk peran 'operator'
+            'operator_person_id' => 'required_if:role,operator|nullable|exists:people,id',
+            'generations_up' => 'required_if:role,operator|nullable|integer|min:0',
+            'generations_down' => 'required_if:role,operator|nullable|integer|min:0',
         ]);
 
-        $user->update($validated);
+        // Gunakan transaksi database untuk memastikan semua data konsisten
+        DB::transaction(function () use ($user, $validated, $request) {
+            $user->role = $validated['role'];
+
+            if ($validated['role'] === 'operator') {
+                // Jika perannya adalah OPERATOR
+                $user->person_id = null; // Hapus tautan person_id lama
+                $user->save();
+
+                // Buat atau perbarui aturan akses di tabel terpisah
+                OperatorAccessControl::updateOrCreate(
+                    ['user_id' => $user->id], // Kunci untuk mencari
+                    [
+                        'person_id' => $validated['operator_person_id'],
+                        'generations_up' => $validated['generations_up'],
+                        'generations_down' => $validated['generations_down'],
+                    ]
+                );
+            } else {
+                // Jika perannya adalah ADMIN atau USER
+                $user->person_id = $validated['person_id'];
+                $user->save();
+
+                // Hapus aturan akses operator jika ada, karena sudah tidak relevan
+                $user->accessControl()->delete();
+            }
+        });
 
         return redirect()->route('users.index')->with('success', 'Data pengguna berhasil diperbarui.');
     }
 
-    // Method baru untuk menghapus pengguna
     public function destroy(User $user)
     {
-        // Pencegahan agar admin tidak bisa menghapus akunnya sendiri
         if (auth()->user()->id === $user->id) {
             return redirect()->route('users.index')->with('error', 'Anda tidak bisa menghapus akun Anda sendiri.');
         }

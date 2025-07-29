@@ -238,4 +238,102 @@ class Person extends Model
         // 5. Kembalikan model Person dari anak-anak tersebut
         return Person::whereIn('id', $childrenIds)->orderBy('birth_date')->get();
     }
+
+    /**
+     * Mengambil semua ID leluhur dari orang ini dalam bentuk array.
+     *
+     * @return array
+     */
+    public function getAncestorIds(): array
+    {
+        $ancestorIds = [];
+        $parents = $this->parents();
+
+        if ($parents->isEmpty()) {
+            return [];
+        }
+
+        foreach ($parents as $parent) {
+            $ancestorIds[] = $parent->id;
+            // Gabungkan dengan ID leluhur dari orang tua
+            $ancestorIds = array_merge($ancestorIds, $parent->getAncestorIds());
+        }
+
+        return array_unique($ancestorIds);
+    }
+
+    /**
+     * Mengambil semua ID keturunan beserta level generasinya.
+     *
+     * @param int $level
+     * @return array
+     */
+    public function getDescendantIdsWithLevel(int $level = 1): array
+    {
+        $descendants = [];
+        $children = $this->allChildren();
+
+        if ($children->isEmpty()) {
+            return [];
+        }
+
+        foreach ($children as $child) {
+            // Simpan anak ini beserta levelnya
+            $descendants[$child->id] = $level;
+            // Gabungkan dengan keturunan dari anak ini
+            $descendants = $descendants + $child->getDescendantIdsWithLevel($level + 1);
+        }
+
+        return $descendants;
+    }
+
+    /**
+     * Memeriksa apakah orang ini berada dalam lingkup akses seorang operator.
+     *
+     * @param User $operator
+     * @return bool
+     */
+    public function isWithinOperatorScope(User $operator): bool
+    {
+        if ($operator->role !== 'operator' || !$operator->accessControl) {
+            return false;
+        }
+
+        $accessControl = $operator->accessControl;
+        $rootPerson = $accessControl->person; // Ambil "akar" silsilah operator
+        $targetPerson = $this; // Orang yang sedang ingin diakses
+
+        // 1. Cek apakah target adalah si "akar" itu sendiri
+        if ($rootPerson->id === $targetPerson->id) {
+            return true;
+        }
+
+        // 2. Cek apakah target adalah KETURUNAN dari "akar"
+        if ($accessControl->generations_down > 0) {
+            $descendants = $rootPerson->getDescendantIdsWithLevel();
+            // Jika target ada di dalam daftar keturunan
+            if (isset($descendants[$targetPerson->id])) {
+                // Cek apakah levelnya masih dalam jangkauan
+                if ($descendants[$targetPerson->id] <= $accessControl->generations_down) {
+                    return true;
+                }
+            }
+        }
+
+        // 3. Cek apakah target adalah LELUHUR dari "akar"
+        if ($accessControl->generations_up > 0) {
+            // Untuk menghitung jarak ke atas, kita cek sebaliknya:
+            // Apakah "akar" adalah KETURUNAN dari target?
+            $rootDescendants = $targetPerson->getDescendantIdsWithLevel();
+            // Jika "akar" ada di dalam daftar keturunan target
+            if (isset($rootDescendants[$rootPerson->id])) {
+                // Cek apakah levelnya (jarak ke atas) masih dalam jangkauan
+                if ($rootDescendants[$rootPerson->id] <= $accessControl->generations_up) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }
