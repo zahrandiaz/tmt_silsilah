@@ -7,21 +7,15 @@ use App\Models\Person;
 use App\Models\Relationship;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Gedcom\Parser;
+use Carbon\Carbon;
 
 class GedcomImportController extends Controller
 {
-    /**
-     * Menampilkan form untuk unggah file GEDCOM.
-     */
     public function showForm()
     {
         return view('admin.import.gedcom');
     }
 
-    /**
-     * Menangani proses unggah dan impor file GEDCOM.
-     */
     public function import(Request $request)
     {
         $request->validate([
@@ -29,47 +23,101 @@ class GedcomImportController extends Controller
         ]);
 
         $path = $request->file('gedcom_file')->getRealPath();
-        $parser = new \Gedcom\Parser();
-        
+        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
         DB::beginTransaction();
         try {
-            $gedcom = $parser->parse($path);
-            $indiMap = [];
-            
-            // TAHAP 1: Impor Semua Individu (INDI)
-            foreach ($gedcom->getIndi() as $individual) {
-                // [PERBAIKAN FINAL] Mengambil data dengan cara yang benar
-                $nameData = $individual->getName() ? current($individual->getName()) : null;
-                $fullName = $nameData ? str_replace('/', '', $nameData->getName()) : 'Unknown';
+            $individualsData = [];
+            $familiesData = [];
+            $currentRecord = null;
+            $currentType = null;
 
-                // Menggunakan getEven('BIRT') dan getEven('DEAT') untuk mengambil data peristiwa
-                $birthData = $individual->getEven('BIRT') ? current($individual->getEven('BIRT')) : null;
-                $deathData = $individual->getEven('DEAT') ? current($individual->getEven('DEAT')) : null;
-                
-                $person = Person::create([
-                    'name' => trim($fullName),
-                    'gender' => $individual->getSex() === 'M' ? 'Laki-laki' : 'Perempuan',
-                    'birth_date' => $birthData ? $birthData->getDate() : null,
-                    'birth_place' => $birthData && $birthData->getPlac() ? $birthData->getPlac()->getPlac() : null,
-                    'death_date' => $deathData ? $deathData->getDate() : null,
-                    'death_place' => $deathData && $deathData->getPlac() ? $deathData->getPlac()->getPlac() : null,
-                ]);
+            foreach ($lines as $line) {
+                $parts = explode(' ', $line, 3);
+                $level = $parts[0];
+                $tag = $parts[1] ?? '';
+                $value = $parts[2] ?? '';
 
-                $indiMap[$individual->getId()] = $person->id;
-            }
-
-            // TAHAP 2: Impor Semua Hubungan Keluarga (FAM)
-            foreach ($gedcom->getFam() as $family) {
-                $husbandId = $family->getHusb() ? ($indiMap[$family->getHusb()] ?? null) : null;
-                $wifeId = $family->getWife() ? ($indiMap[$family->getWife()] ?? null) : null;
-                $childrenIds = [];
-                if ($family->getChil()) {
-                    foreach ($family->getChil() as $childId) {
-                        if (isset($indiMap[$childId])) {
-                            $childrenIds[] = $indiMap[$childId];
+                if ($level === '0' && str_starts_with($tag, '@I')) {
+                    $currentType = 'INDI';
+                    $currentRecord = str_replace('@', '', $tag);
+                    $individualsData[$currentRecord] = ['id' => $currentRecord];
+                } elseif ($level === '0' && str_starts_with($tag, '@F')) {
+                    $currentType = 'FAM';
+                    $currentRecord = str_replace('@', '', $tag);
+                    $familiesData[$currentRecord] = ['id' => $currentRecord, 'children' => []];
+                } elseif ($currentRecord) {
+                    if ($currentType === 'INDI') {
+                        switch ($tag) {
+                            case 'NAME':
+                                $individualsData[$currentRecord]['name'] = trim(str_replace('/', '', $value));
+                                break;
+                            case 'SEX':
+                                $individualsData[$currentRecord]['gender'] = ($value === 'M') ? 'Laki-laki' : 'Perempuan';
+                                break;
+                            case 'BIRT':
+                                $individualsData[$currentRecord]['event'] = 'BIRT';
+                                break;
+                            case 'DEAT':
+                                $individualsData[$currentRecord]['event'] = 'DEAT';
+                                break;
+                            // --- TAMBAHKAN LOGIKA BARU UNTUK PLAC & NOTE ---
+                            case 'PLAC':
+                                if (isset($individualsData[$currentRecord]['event'])) {
+                                    $eventName = ($individualsData[$currentRecord]['event'] === 'BIRT') ? 'birth_place' : 'death_place';
+                                    $individualsData[$currentRecord][$eventName] = $value;
+                                }
+                                break;
+                            case 'NOTE':
+                                $individualsData[$currentRecord]['biography'] = $value;
+                                break;
+                            case 'CONC': // Menangani baris lanjutan dari biografi
+                                if (isset($individualsData[$currentRecord]['biography'])) {
+                                    $individualsData[$currentRecord]['biography'] .= $value;
+                                }
+                                break;
+                            // ---------------------------------------------
+                            case 'DATE':
+                                if (isset($individualsData[$currentRecord]['event'])) {
+                                    $eventName = ($individualsData[$currentRecord]['event'] === 'BIRT') ? 'birth_date' : 'death_date';
+                                    $individualsData[$currentRecord][$eventName] = Carbon::createFromFormat('j M Y', $value)->format('Y-m-d');
+                                }
+                                break;
+                        }
+                    } elseif ($currentType === 'FAM') {
+                        switch ($tag) {
+                            case 'HUSB':
+                                $familiesData[$currentRecord]['husband'] = str_replace('@', '', $value);
+                                break;
+                            case 'WIFE':
+                                $familiesData[$currentRecord]['wife'] = str_replace('@', '', $value);
+                                break;
+                            case 'CHIL':
+                                $familiesData[$currentRecord]['children'][] = str_replace('@', '', $value);
+                                break;
                         }
                     }
                 }
+            }
+
+            $indiMap = [];
+            foreach ($individualsData as $gedcomId => $data) {
+                // --- TAMBAHKAN FIELD BARU SAAT CREATE ---
+                $person = Person::create([
+                    'name' => $data['name'] ?? 'Unknown',
+                    'gender' => $data['gender'] ?? 'Perempuan',
+                    'birth_date' => $data['birth_date'] ?? null,
+                    'birth_place' => $data['birth_place'] ?? null,
+                    'death_date' => $data['death_date'] ?? null,
+                    'death_place' => $data['death_place'] ?? null,
+                    'biography' => $data['biography'] ?? null,
+                ]);
+                $indiMap[$gedcomId] = $person->id;
+            }
+
+            foreach ($familiesData as $family) {
+                $husbandId = isset($family['husband']) && isset($indiMap[$family['husband']]) ? $indiMap[$family['husband']] : null;
+                $wifeId = isset($family['wife']) && isset($indiMap[$family['wife']]) ? $indiMap[$family['wife']] : null;
 
                 if ($husbandId || $wifeId) {
                     $familyUnitId = uniqid('fam_');
@@ -79,8 +127,10 @@ class GedcomImportController extends Controller
                     if ($wifeId) {
                         Relationship::create(['person_id' => $wifeId, 'family_unit_id' => $familyUnitId, 'role_in_family' => 'partner']);
                     }
-                    foreach ($childrenIds as $childId) {
-                        Relationship::create(['person_id' => $childId, 'family_unit_id' => $familyUnitId, 'role_in_family' => 'child']);
+                    foreach ($family['children'] as $childGedcomId) {
+                        if (isset($indiMap[$childGedcomId])) {
+                            Relationship::create(['person_id' => $indiMap[$childGedcomId], 'family_unit_id' => $familyUnitId, 'role_in_family' => 'child']);
+                        }
                     }
                 }
             }
@@ -90,8 +140,8 @@ class GedcomImportController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('GEDCOM Import Failed: ' . $e->getMessage());
-            return redirect()->route('import.gedcom.form')->with('error', 'Terjadi kesalahan saat proses impor. File mungkin rusak atau formatnya tidak didukung.');
+            Log::error('GEDCOM Manual Import Failed: ' . $e->getMessage() . ' on line ' . $e->getLine() . ' in ' . $e->getFile());
+            return redirect()->route('import.gedcom.form')->with('error', 'Import Gagal: ' . $e->getMessage());
         }
     }
 }
