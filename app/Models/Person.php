@@ -58,6 +58,11 @@ class Person extends Model
         return $this->hasMany(Photo::class)->orderBy('created_at', 'desc');
     }
 
+    public function relationships(): HasMany
+    {
+        return $this->hasMany(Relationship::class);
+    }
+
     public function father(): ?Person
     {
         return $this->parents()->firstWhere('gender', 'Laki-laki');
