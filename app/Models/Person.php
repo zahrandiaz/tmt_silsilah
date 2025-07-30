@@ -7,14 +7,29 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
-// --- TAMBAHKAN DUA BARIS INI ---
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Carbon;
+// --- TAMBAHKAN DUA BARIS INI ---
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Person extends Model
 {
-    use HasFactory;
+    // --- TAMBAHKAN TRAIT INI ---
+    use HasFactory, LogsActivity;
+
     protected $guarded = [];
+
+    // --- TAMBAHKAN METHOD BARU INI UNTUK KONFIGURASI LOG ---
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll() // Mencatat semua atribut yang bisa diisi
+            ->setDescriptionForEvent(fn(string $eventName) => "Data silsilah '{$this->name}' telah di-{$eventName}")
+            ->logOnlyDirty() // Hanya catat atribut yang berubah
+            ->dontSubmitEmptyLogs(); // Jangan simpan log jika tidak ada yang berubah
+    }
+    // --------------------------------------------------------
 
     protected static function booted(): void
     {
@@ -25,11 +40,6 @@ class Person extends Model
         });
     }
 
-    // --- AWAL PENAMBAHAN ACCESSOR ---
-
-    /**
-     * Mendapatkan atribut tanggal lahir yang sudah diformat.
-     */
     protected function birthDateFormatted(): Attribute
     {
         return Attribute::make(
@@ -39,9 +49,6 @@ class Person extends Model
         );
     }
 
-    /**
-     * Mendapatkan atribut tanggal wafat yang sudah diformat.
-     */
     protected function deathDateFormatted(): Attribute
     {
         return Attribute::make(
@@ -50,8 +57,6 @@ class Person extends Model
                 : null
         );
     }
-
-    // --- AKHIR PENAMBAHAN ACCESSOR ---
 
     public function photos(): HasMany
     {
@@ -105,7 +110,6 @@ class Person extends Model
         $childrenIds = Relationship::whereIn('family_unit_id', $familyUnitIds)
             ->where('role_in_family', 'child')->pluck('person_id');
 
-        // Mengurutkan berdasarkan tanggal lahir, dengan data kosong (null) di akhir
         return Person::whereIn('id', $childrenIds)->orderByRaw('birth_date IS NULL, birth_date ASC')->get();
     }
 
@@ -154,55 +158,34 @@ class Person extends Model
         return $this->hasOne(User::class);
     }
 
-    // --- TAMBAHKAN METHOD BARU INI ---
-
-    /**
-     * Menghitung kedalaman generasi keturunan terpanjang dari orang ini.
-     * Generasi orang ini dihitung sebagai 1.
-     *
-     * @return int
-     */
     public function getMaxDescendantDepth(): int
     {
         $children = $this->allChildren();
 
         if ($children->isEmpty()) {
-            // Jika tidak punya anak, kedalamannya adalah 1 (dirinya sendiri).
             return 1;
         }
 
         $maxDepth = 0;
         foreach ($children as $child) {
-            // Cari kedalaman maksimum di antara semua anak.
             $depth = $child->getMaxDescendantDepth();
             if ($depth > $maxDepth) {
                 $maxDepth = $depth;
             }
         }
 
-        // Tambahkan 1 (untuk generasi saat ini) ke kedalaman maksimum anak.
         return 1 + $maxDepth;
     }
 
-    /**
-     * Mengambil semua keturunan beserta pasangan hingga kedalaman (level) tertentu.
-     *
-     * @param int $maxLevel
-     * @param int $currentLevel
-     * @return \Illuminate\Support\Collection
-     */
     public function getDescendantsWithSpouses(int $maxLevel, int $currentLevel = 0)
     {
-        // Hentikan rekursi jika sudah mencapai level maksimal
         if ($currentLevel > $maxLevel) {
             return collect();
         }
 
-        // Ambil semua anak dari person saat ini
         $children = $this->allChildren();
         $descendants = $children;
 
-        // Untuk setiap anak, panggil fungsi ini lagi secara rekursif
         foreach ($children as $child) {
             $descendants = $descendants->merge(
                 $child->getDescendantsWithSpouses($maxLevel, $currentLevel + 1)
@@ -212,45 +195,28 @@ class Person extends Model
         return $descendants;
     }
 
-    /**
-     * Mengambil anak-anak yang dimiliki bersama pasangan (spouse) tertentu.
-     *
-     * @param Person $spouse
-     * @return Collection
-     */
     public function childrenWith(Person $spouse): Collection
     {
-        // 1. Cari semua unit keluarga di mana 'person' ini adalah partner
         $myFamilyUnitIds = Relationship::where('person_id', $this->id)
             ->where('role_in_family', 'partner')
             ->pluck('family_unit_id');
 
-        // 2. Dari unit-unit tersebut, cari satu unit yang juga berisi 'spouse' sebagai partner
         $familyUnitId = Relationship::whereIn('family_unit_id', $myFamilyUnitIds)
             ->where('person_id', $spouse->id)
             ->where('role_in_family', 'partner')
             ->value('family_unit_id');
 
-        // 3. Jika tidak ada unit keluarga bersama, kembalikan koleksi kosong
         if (!$familyUnitId) {
             return collect();
         }
 
-        // 4. Ambil semua ID anak dari unit keluarga yang spesifik tersebut
         $childrenIds = Relationship::where('family_unit_id', $familyUnitId)
             ->where('role_in_family', 'child')
             ->pluck('person_id');
             
-        // 5. Kembalikan model Person dari anak-anak tersebut
-        // Mengurutkan berdasarkan tanggal lahir, dengan data kosong (null) di akhir
         return Person::whereIn('id', $childrenIds)->orderByRaw('birth_date IS NULL, birth_date ASC')->get();
     }
 
-    /**
-     * Mengambil semua ID leluhur dari orang ini dalam bentuk array.
-     *
-     * @return array
-     */
     public function getAncestorIds(): array
     {
         $ancestorIds = [];
@@ -262,19 +228,12 @@ class Person extends Model
 
         foreach ($parents as $parent) {
             $ancestorIds[] = $parent->id;
-            // Gabungkan dengan ID leluhur dari orang tua
             $ancestorIds = array_merge($ancestorIds, $parent->getAncestorIds());
         }
 
         return array_unique($ancestorIds);
     }
 
-    /**
-     * Mengambil semua ID keturunan beserta level generasinya.
-     *
-     * @param int $level
-     * @return array
-     */
     public function getDescendantIdsWithLevel(int $level = 1): array
     {
         $descendants = [];
@@ -285,21 +244,13 @@ class Person extends Model
         }
 
         foreach ($children as $child) {
-            // Simpan anak ini beserta levelnya
             $descendants[$child->id] = $level;
-            // Gabungkan dengan keturunan dari anak ini
             $descendants = $descendants + $child->getDescendantIdsWithLevel($level + 1);
         }
 
         return $descendants;
     }
 
-    /**
-     * Memeriksa apakah orang ini berada dalam lingkup akses seorang operator.
-     *
-     * @param User $operator
-     * @return bool
-     */
     public function isWithinOperatorScope(User $operator): bool
     {
         if ($operator->role !== 'operator' || !$operator->accessControl) {
@@ -307,34 +258,25 @@ class Person extends Model
         }
 
         $accessControl = $operator->accessControl;
-        $rootPerson = $accessControl->person; // Ambil "akar" silsilah operator
-        $targetPerson = $this; // Orang yang sedang ingin diakses
+        $rootPerson = $accessControl->person;
+        $targetPerson = $this;
 
-        // 1. Cek apakah target adalah si "akar" itu sendiri
         if ($rootPerson->id === $targetPerson->id) {
             return true;
         }
 
-        // 2. Cek apakah target adalah KETURUNAN dari "akar"
         if ($accessControl->generations_down > 0) {
             $descendants = $rootPerson->getDescendantIdsWithLevel();
-            // Jika target ada di dalam daftar keturunan
             if (isset($descendants[$targetPerson->id])) {
-                // Cek apakah levelnya masih dalam jangkauan
                 if ($descendants[$targetPerson->id] <= $accessControl->generations_down) {
                     return true;
                 }
             }
         }
 
-        // 3. Cek apakah target adalah LELUHUR dari "akar"
         if ($accessControl->generations_up > 0) {
-            // Untuk menghitung jarak ke atas, kita cek sebaliknya:
-            // Apakah "akar" adalah KETURUNAN dari target?
             $rootDescendants = $targetPerson->getDescendantIdsWithLevel();
-            // Jika "akar" ada di dalam daftar keturunan target
             if (isset($rootDescendants[$rootPerson->id])) {
-                // Cek apakah levelnya (jarak ke atas) masih dalam jangkauan
                 if ($rootDescendants[$rootPerson->id] <= $accessControl->generations_up) {
                     return true;
                 }
@@ -344,27 +286,12 @@ class Person extends Model
         return false;
     }
 
-     /**
-     * Mendapatkan foto profil yang telah ditentukan.
-     * Jika tidak ada, akan mengembalikan foto pertama yang diunggah.
-     *
-     * @return Model|null
-     */
     public function profilePicture()
     {
-        // Cari foto yang ditandai sebagai foto profil
         $profilePic = $this->photos()->where('is_profile_picture', true)->first();
-
-        // Jika tidak ada, kembalikan foto pertama sebagai fallback
         return $profilePic ?: $this->photos()->first();
     }
 
-    /**
-     * Menghasilkan data laporan keturunan berinden dalam bentuk array.
-     *
-     * @param int $maxGenerations
-     * @return array
-     */
     public function generateIndentedReport(int $maxGenerations, bool $withPhotos = false): array
     {
         $reportLines = [];
@@ -375,7 +302,7 @@ class Person extends Model
             $reportLines[] = [
                 'type' => 'person',
                 'level' => $level,
-                'number' => $prefix, // Nomor hierarkis
+                'number' => $prefix,
                 'person' => $person,
                 'photo_path' => $profilePicture?->image_path,
             ];
@@ -406,13 +333,12 @@ class Person extends Model
                 }
             }
 
-            // Menangani anak tanpa pasangan yang tercatat
             $remainingChildren = $person->allChildren()->diff($unionedChildren);
             if($remainingChildren->isNotEmpty()) {
                  $reportLines[] = [ 'type' => 'no_spouse_separator', 'level' => $level ];
                  foreach($remainingChildren as $child) {
-                    $newPrefix = $prefix . '.' . $childCounter++;
-                    $buildLines($child, $level + 1, $newPrefix);
+                     $newPrefix = $prefix . '.' . $childCounter++;
+                     $buildLines($child, $level + 1, $newPrefix);
                  }
             }
         };
