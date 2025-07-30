@@ -12,7 +12,8 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\GedcomImportController;
 use App\Http\Controllers\AdminDashboardController;
-use App\Http\Controllers\ReportController; // <-- TAMBAHKAN INI
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ActivityLogController; // <-- TAMBAHKAN INI
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckSilsilahPrivacy;
 use Illuminate\Support\Facades\Route;
@@ -63,13 +64,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/import/gedcom', [GedcomImportController::class, 'showForm'])->name('import.gedcom.form');
         Route::post('/import/gedcom', [GedcomImportController::class, 'import'])->name('import.gedcom.store');
 
-        // --- TAMBAHKAN RUTE LAPORAN DI SINI ---
+        // Rute Laporan
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('/people-without-birthdate', [ReportController::class, 'peopleWithoutBirthDate'])->name('people.no_birth_date');
             Route::get('/people-without-parents', [ReportController::class, 'peopleWithoutParents'])->name('people.no_parents');
             Route::get('/families-without-children', [ReportController::class, 'familiesWithoutChildren'])->name('families.no_children');
         });
-        // ------------------------------------
+
+        // --- TAMBAHKAN RUTE LOG AKTIVITAS DI SINI ---
+        Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
+        // ------------------------------------------
     });
 });
 

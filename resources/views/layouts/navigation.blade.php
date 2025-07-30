@@ -40,6 +40,12 @@
                             <x-nav-link :href="route('import.gedcom.form')" :active="request()->routeIs('import.gedcom.form')">
                                 {{ __('Impor GEDCOM') }}
                             </x-nav-link>
+
+                            <!-- --- TAMBAHKAN TAUTAN BARU DI SINI --- -->
+                            <x-nav-link :href="route('activity-log.index')" :active="request()->routeIs('activity-log.index')">
+                                {{ __('Log Aktivitas') }}
+                            </x-nav-link>
+                            <!-- ------------------------------------ -->
                         @endif
                     @endauth
                 </div>
