@@ -14,7 +14,7 @@ use App\Http\Controllers\GedcomImportController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ActivityLogController;
-use App\Http\Controllers\MergeController; // <-- TAMBAHKAN INI
+use App\Http\Controllers\MergeController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckSilsilahPrivacy;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +32,11 @@ Route::get('/dashboard', [AdminDashboardController::class, 'index'])
 // --- SEMUA RUTE 'PEOPLE' DIKELOMPOKKAN DI SINI ---
 Route::middleware('auth')->group(function () {
     Route::resource('people', PersonController::class)->except(['show']);
+
+    // --- TAMBAHKAN RUTE PENCARIAN DI SINI ---
+    // Rute ini akan menangani permintaan pencarian dari Tom Select
+    Route::get('/people-search', [PersonController::class, 'searchApi'])->name('people.search');
+    // ----------------------------------------
 });
 
 // Rute 'show' yang memiliki parameter, didefinisikan SETELAHNYA.
@@ -75,10 +80,9 @@ Route::middleware('auth')->group(function () {
         // Rute Log Aktivitas
         Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
 
-        // --- TAMBAHKAN RUTE MERGE DI SINI ---
+        // Rute Merge
         Route::get('/merge-duplicates', [MergeController::class, 'showForm'])->name('merge.form');
         Route::post('/merge-duplicates', [MergeController::class, 'merge'])->name('merge.process');
-        // ------------------------------------
     });
 });
 

@@ -45,11 +45,19 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
+        // --- PERUBAHAN DIMULAI DI SINI ---
+
         // Memuat relasi accessControl untuk efisiensi
-        $user->load('accessControl'); 
-        $people = Person::with('user')->orderBy('name')->get();
+        $user->load('accessControl.person'); 
         
-        return view('users.edit', compact('user', 'people'));
+        // Ambil data Person yang tertaut dengan user ini (jika ada)
+        $linkedPerson = Person::find($user->person_id);
+
+        // Kita tidak lagi mengirimkan seluruh koleksi $people
+
+        return view('users.edit', compact('user', 'linkedPerson'));
+        
+        // --- PERUBAHAN SELESAI ---
     }
 
     public function update(Request $request, User $user)
