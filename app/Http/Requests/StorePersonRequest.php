@@ -25,11 +25,12 @@ class StorePersonRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'gender' => 'required|in:Laki-laki,Perempuan',
+            'phone_number' => 'nullable|string|max:20', // <-- TAMBAHKAN INI
             'birth_date' => 'nullable|date',
             'birth_place' => 'nullable|string|max:255',
             'death_date' => 'nullable|date|after_or_equal:birth_date',
             'death_place' => 'nullable|string|max:255',
-            'biography' => 'nullable|string',
+            'biography' => 'nullable|string', // Aturan ini sudah benar (tanpa batas max)
             'father_id' => 'nullable|exists:people,id',
             'mother_id' => 'nullable|exists:people,id',
             'is_key_figure' => 'nullable|boolean',

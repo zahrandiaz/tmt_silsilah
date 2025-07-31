@@ -55,13 +55,17 @@ class GedcomImportController extends Controller
                             case 'SEX':
                                 $individualsData[$currentRecord]['gender'] = ($value === 'M') ? 'Laki-laki' : 'Perempuan';
                                 break;
+                            // --- TAMBAHKAN CASE UNTUK PHON ---
+                            case 'PHON':
+                                $individualsData[$currentRecord]['phone_number'] = $value;
+                                break;
+                            // ---------------------------------
                             case 'BIRT':
                                 $individualsData[$currentRecord]['event'] = 'BIRT';
                                 break;
                             case 'DEAT':
                                 $individualsData[$currentRecord]['event'] = 'DEAT';
                                 break;
-                            // --- TAMBAHKAN LOGIKA BARU UNTUK PLAC & NOTE ---
                             case 'PLAC':
                                 if (isset($individualsData[$currentRecord]['event'])) {
                                     $eventName = ($individualsData[$currentRecord]['event'] === 'BIRT') ? 'birth_place' : 'death_place';
@@ -71,12 +75,11 @@ class GedcomImportController extends Controller
                             case 'NOTE':
                                 $individualsData[$currentRecord]['biography'] = $value;
                                 break;
-                            case 'CONC': // Menangani baris lanjutan dari biografi
+                            case 'CONC':
                                 if (isset($individualsData[$currentRecord]['biography'])) {
                                     $individualsData[$currentRecord]['biography'] .= $value;
                                 }
                                 break;
-                            // ---------------------------------------------
                             case 'DATE':
                                 if (isset($individualsData[$currentRecord]['event'])) {
                                     $eventName = ($individualsData[$currentRecord]['event'] === 'BIRT') ? 'birth_date' : 'death_date';
@@ -102,10 +105,10 @@ class GedcomImportController extends Controller
 
             $indiMap = [];
             foreach ($individualsData as $gedcomId => $data) {
-                // --- TAMBAHKAN FIELD BARU SAAT CREATE ---
                 $person = Person::create([
                     'name' => $data['name'] ?? 'Unknown',
                     'gender' => $data['gender'] ?? 'Perempuan',
+                    'phone_number' => $data['phone_number'] ?? null, // <-- TAMBAHKAN INI
                     'birth_date' => $data['birth_date'] ?? null,
                     'birth_place' => $data['birth_place'] ?? null,
                     'death_date' => $data['death_date'] ?? null,

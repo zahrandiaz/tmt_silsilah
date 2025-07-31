@@ -20,12 +20,20 @@
                                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
                             </div>
 
-                            <div class="mt-4">
-                                <x-input-label for="gender" :value="__('Jenis Kelamin')" />
-                                <select name="gender" id="gender" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                                    <option value="Laki-laki" @selected(old('gender', $person->gender) == 'Laki-laki')>Laki-laki</option>
-                                    <option value="Perempuan" @selected(old('gender', $person->gender) == 'Perempuan')>Perempuan</option>
-                                </select>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <x-input-label for="gender" :value="__('Jenis Kelamin')" />
+                                    <select name="gender" id="gender" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                        <option value="Laki-laki" @selected(old('gender', $person->gender) == 'Laki-laki')>Laki-laki</option>
+                                        <option value="Perempuan" @selected(old('gender', $person->gender) == 'Perempuan')>Perempuan</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <x-input-label for="phone_number" :value="__('Nomor HP')" />
+                                    <x-text-input id="phone_number" class="block mt-1 w-full" type="text" name="phone_number" :value="old('phone_number', $person->phone_number)" />
+                                    <x-input-error :messages="$errors->get('phone_number')" class="mt-2" />
+                                </div>
                             </div>
 
                             <div class="mt-4">
@@ -93,14 +101,13 @@
     @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Fungsi untuk membuat instance Tom Select dengan konfigurasi
             function createTomSelect(selector, gender, initialOptions = []) {
                 return new window.TomSelect(selector, {
                     valueField: 'value',
                     labelField: 'text',
                     searchField: 'text',
                     maxItems: 1,
-                    options: initialOptions, // <-- Menambahkan data awal
+                    options: initialOptions,
                     create: false,
                     load: function(query, callback) {
                         if (!query.length) return callback();
@@ -128,7 +135,6 @@
                 });
             }
 
-            // Menyiapkan data awal untuk Ayah
             let initialFatherOptions = [];
             @if($father)
                 initialFatherOptions.push({
@@ -141,8 +147,6 @@
                 fatherSelect.setValue('{{ $father->id }}');
             @endif
 
-
-            // Menyiapkan data awal untuk Ibu
             let initialMotherOptions = [];
             @if($mother)
                 initialMotherOptions.push({

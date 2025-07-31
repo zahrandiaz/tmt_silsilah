@@ -21,12 +21,12 @@ class UpdatePersonRequest extends FormRequest
      */
     public function rules(): array
     {
-        // Mengambil objek 'person' dari parameter route.
         $person = $this->route('person');
 
         return [
             'name' => 'required|string|max:255',
             'gender' => 'required|in:Laki-laki,Perempuan',
+            'phone_number' => 'nullable|string|max:20', // <-- ADD THIS
             'birth_date' => 'nullable|date',
             'birth_place' => 'nullable|string|max:255',
             'death_date' => 'nullable|date|after_or_equal:birth_date',

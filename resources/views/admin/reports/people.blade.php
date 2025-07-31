@@ -15,6 +15,15 @@
                         </a>
                     </div>
                     
+                    <div class="mb-4">
+                        <form action="{{ url()->current() }}" method="GET" class="flex items-center space-x-2">
+                            <x-text-input type="text" name="search" placeholder="Cari berdasarkan nama..." class="w-full md:w-1/3" value="{{ request('search') }}" />
+                            <x-primary-button type="submit">Cari</x-primary-button>
+                            @if(request('search'))
+                                <a href="{{ url()->current() }}" class="text-sm text-gray-600 dark:text-gray-400 hover:underline">Reset</a>
+                            @endif
+                        </form>
+                    </div>
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-50 dark:bg-gray-700">
                             <tr>
@@ -39,7 +48,11 @@
                             @empty
                                 <tr>
                                     <td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">
-                                        Tidak ada data untuk ditampilkan.
+                                        @if(request('search'))
+                                            Tidak ada data yang cocok dengan pencarian "{{ request('search') }}".
+                                        @else
+                                            Tidak ada data untuk ditampilkan.
+                                        @endif
                                     </td>
                                 </tr>
                             @endforelse
