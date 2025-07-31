@@ -13,7 +13,8 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\GedcomImportController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\ActivityLogController; // <-- TAMBAHKAN INI
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\MergeController; // <-- TAMBAHKAN INI
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckSilsilahPrivacy;
 use Illuminate\Support\Facades\Route;
@@ -71,9 +72,13 @@ Route::middleware('auth')->group(function () {
             Route::get('/families-without-children', [ReportController::class, 'familiesWithoutChildren'])->name('families.no_children');
         });
 
-        // --- TAMBAHKAN RUTE LOG AKTIVITAS DI SINI ---
+        // Rute Log Aktivitas
         Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
-        // ------------------------------------------
+
+        // --- TAMBAHKAN RUTE MERGE DI SINI ---
+        Route::get('/merge-duplicates', [MergeController::class, 'showForm'])->name('merge.form');
+        Route::post('/merge-duplicates', [MergeController::class, 'merge'])->name('merge.process');
+        // ------------------------------------
     });
 });
 
