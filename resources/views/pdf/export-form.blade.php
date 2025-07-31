@@ -1,4 +1,3 @@
-{{-- resources/views/pdf/export-form.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
@@ -23,12 +22,8 @@
                         <div class="space-y-4">
                             <div>
                                 <x-input-label for="person_id" :value="__('Pilih Tokoh Awal Silsilah')" />
-                                <select name="person_id" id="person_id" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
-                                    <option value="">-- Pilih Seseorang --</option>
-                                    @foreach($people as $person)
-                                        <option value="{{ $person->id }}">{{ $person->name }}</option>
-                                    @endforeach
-                                </select>
+                                {{-- PERUBAHAN: Mengganti select dengan input --}}
+                                <input type="text" name="person_id" id="person_id" placeholder="Ketik untuk mencari nama..." required>
                                 <x-input-error :messages="$errors->get('person_id')" class="mt-2" />
                             </div>
 
@@ -60,4 +55,31 @@
             </div>
         </div>
     </div>
+
+    {{-- TAMBAHKAN: Script untuk Tom Select --}}
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            new window.TomSelect('#person_id', {
+                valueField: 'value',
+                labelField: 'text',
+                searchField: 'text',
+                maxItems: 1,
+                create: false,
+                load: function(query, callback) {
+                    if (!query.length) return callback();
+                    let url = `{{ route('people.search') }}?search=${encodeURIComponent(query)}`;
+                    fetch(url)
+                        .then(response => response.json())
+                        .then(json => callback(json))
+                        .catch(() => callback());
+                },
+                render: {
+                    option: (item, escape) => `<div>${escape(item.text)}</div>`,
+                    item: (item, escape) => `<div>${escape(item.text)}</div>`
+                }
+            });
+        });
+    </script>
+    @endpush
 </x-app-layout>

@@ -9,27 +9,35 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Carbon;
-// --- TAMBAHKAN DUA BARIS INI ---
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
 class Person extends Model
 {
-    // --- TAMBAHKAN TRAIT INI ---
     use HasFactory, LogsActivity;
 
     protected $guarded = [];
 
-    // --- TAMBAHKAN METHOD BARU INI UNTUK KONFIGURASI LOG ---
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logAll() // Mencatat semua atribut yang bisa diisi
+            ->logAll()
             ->setDescriptionForEvent(fn(string $eventName) => "Data silsilah '{$this->name}' telah di-{$eventName}")
-            ->logOnlyDirty() // Hanya catat atribut yang berubah
-            ->dontSubmitEmptyLogs(); // Jangan simpan log jika tidak ada yang berubah
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
-    // --------------------------------------------------------
+    
+    // --- TAMBAHKAN MUTATOR BARU DI SINI ---
+    /**
+     * Selalu simpan atribut 'name' dalam format uppercase.
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            set: fn (string $value) => strtoupper($value),
+        );
+    }
+    // ------------------------------------
 
     protected static function booted(): void
     {
@@ -112,7 +120,8 @@ class Person extends Model
 
         return Person::whereIn('id', $childrenIds)->orderByRaw('birth_date IS NULL, birth_date ASC')->get();
     }
-
+    
+    // ... (sisa metode Anda tetap sama) ...
     public function getAncestorTree(): array
     {
         $tree = [];

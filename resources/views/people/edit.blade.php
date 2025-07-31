@@ -9,21 +9,17 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    {{-- AWAL PERUBAHAN --}}
                     <div x-data="{ submitting: false }">
                         <form method="POST" action="{{ route('people.update', $person) }}" @submit="submitting = true">
-                    {{-- AKHIR PERUBAHAN --}}
                             @csrf
                             @method('PUT')
 
-                            <!-- Nama -->
                             <div>
                                 <x-input-label for="name" :value="__('Nama Lengkap')" />
                                 <x-text-input id="name" class="block mt-1 w-full capitalize-input" type="text" name="name" :value="old('name', $person->name)" required autofocus />
                                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
                             </div>
 
-                            <!-- Jenis Kelamin -->
                             <div class="mt-4">
                                 <x-input-label for="gender" :value="__('Jenis Kelamin')" />
                                 <select name="gender" id="gender" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
@@ -32,29 +28,18 @@
                                 </select>
                             </div>
 
-                            <!-- Ayah -->
                             <div class="mt-4">
                                 <x-input-label for="father_id" :value="__('Ayah')" />
-                                <select name="father_id" id="father_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                                    <option value="">-- Tidak Diketahui --</option>
-                                    @foreach ($people->where('gender', 'Laki-laki') as $father)
-                                        <option value="{{ $father->id }}" @selected(old('father_id', $fatherId) == $father->id)>{{ $father->name }}</option>
-                                    @endforeach
-                                </select>
+                                <input type="text" id="father_id" name="father_id" placeholder="Ketik untuk mencari nama ayah...">
+                                <x-input-error :messages="$errors->get('father_id')" class="mt-2" />
                             </div>
 
-                            <!-- Ibu -->
                             <div class="mt-4">
                                 <x-input-label for="mother_id" :value="__('Ibu')" />
-                                <select name="mother_id" id="mother_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                                    <option value="">-- Tidak Diketahui --</option>
-                                    @foreach ($people->where('gender', 'Perempuan') as $mother)
-                                        <option value="{{ $mother->id }}" @selected(old('mother_id', $motherId) == $mother->id)>{{ $mother->name }}</option>
-                                    @endforeach
-                                </select>
+                                <input type="text" id="mother_id" name="mother_id" placeholder="Ketik untuk mencari nama ibu...">
+                                <x-input-error :messages="$errors->get('mother_id')" class="mt-2" />
                             </div>
                             
-                            <!-- Tanggal Lahir & Tempat Lahir -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                 <div>
                                     <x-input-label for="birth_date" :value="__('Tanggal Lahir')" />
@@ -66,7 +51,6 @@
                                 </div>
                             </div>
 
-                            <!-- Tanggal Wafat & Tempat Wafat -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                 <div>
                                     <x-input-label for="death_date" :value="__('Tanggal Wafat')" />
@@ -78,7 +62,6 @@
                                 </div>
                             </div>
 
-                            <!-- Biografi -->
                             <div class="mt-4">
                                 <x-input-label for="biography" :value="__('Biografi Singkat')" />
                                 <textarea name="biography" id="biography" rows="4" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('biography', $person->biography) }}</textarea>
@@ -87,8 +70,7 @@
                             <div class="mt-4">
                                 <label for="is_key_figure" class="inline-flex items-center">
                                     <input id="is_key_figure" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="is_key_figure" value="1"
-                                        {{-- Untuk form edit, tambahkan kondisi checked --}}
-                                        @if(isset($person) && old('is_key_figure', $person->is_key_figure)) checked @endif
+                                        @if(old('is_key_figure', $person->is_key_figure)) checked @endif
                                     >
                                     <span class="ms-2 text-sm text-gray-600">{{ __('Tandai sebagai Tokoh Kunci (tampil di halaman depan)') }}</span>
                                 </label>
@@ -96,12 +78,10 @@
 
                             <div class="flex items-center justify-end mt-4">
                                 <a href="{{ route('people.index') }}" class="text-sm text-gray-600 hover:text-gray-900 mr-4">Batal</a>
-                                {{-- AWAL PERUBAHAN --}}
                                 <x-primary-button x-bind:disabled="submitting">
                                     <span x-show="!submitting">{{ __('Simpan') }}</span>
                                     <span x-show="submitting">{{ __('Menyimpan...') }}</span>
                                 </x-primary-button>
-                                {{-- AKHIR PERUBAHAN --}}
                             </div>
                         </form>
                     </div>
@@ -109,4 +89,72 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Fungsi untuk membuat instance Tom Select dengan konfigurasi
+            function createTomSelect(selector, gender, initialOptions = []) {
+                return new window.TomSelect(selector, {
+                    valueField: 'value',
+                    labelField: 'text',
+                    searchField: 'text',
+                    maxItems: 1,
+                    options: initialOptions, // <-- Menambahkan data awal
+                    create: false,
+                    load: function(query, callback) {
+                        if (!query.length) return callback();
+                        let url = `{{ route('people.search') }}?search=${encodeURIComponent(query)}`;
+                        if (gender) {
+                            url += `&gender=${gender}`;
+                        }
+                        
+                        fetch(url)
+                            .then(response => response.json())
+                            .then(json => {
+                                callback(json);
+                            }).catch(()=>{
+                                callback();
+                            });
+                    },
+                    render: {
+                        option: function(item, escape) {
+                            return `<div>${escape(item.text)}</div>`;
+                        },
+                        item: function(item, escape) {
+                            return `<div>${escape(item.text)}</div>`;
+                        }
+                    }
+                });
+            }
+
+            // Menyiapkan data awal untuk Ayah
+            let initialFatherOptions = [];
+            @if($father)
+                initialFatherOptions.push({
+                    value: '{{ $father->id }}',
+                    text: '{{ $father->name }} (ID: {{ $father->id }})'
+                });
+            @endif
+            const fatherSelect = createTomSelect('#father_id', 'Laki-laki', initialFatherOptions);
+            @if($father)
+                fatherSelect.setValue('{{ $father->id }}');
+            @endif
+
+
+            // Menyiapkan data awal untuk Ibu
+            let initialMotherOptions = [];
+            @if($mother)
+                initialMotherOptions.push({
+                    value: '{{ $mother->id }}',
+                    text: '{{ $mother->name }} (ID: {{ $mother->id }})'
+                });
+            @endif
+            const motherSelect = createTomSelect('#mother_id', 'Perempuan', initialMotherOptions);
+            @if($mother)
+                motherSelect.setValue('{{ $mother->id }}');
+            @endif
+        });
+    </script>
+    @endpush
 </x-app-layout>

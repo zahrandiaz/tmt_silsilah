@@ -59,28 +59,19 @@ class PersonController extends Controller
 
     public function edit(Person $person)
     {
-        $descendantIds = $person->getDescendantIds();
-        $excludedIds = array_merge([$person->id], $descendantIds);
-        $people = Person::whereNotIn('id', $excludedIds)->orderBy('name')->get();
-        
-        $fatherId = null;
-        $motherId = null;
-        
-        $childRelation = Relationship::where('person_id', $person->id)
-            ->where('role_in_family', 'child')
-            ->first();
+        // --- PERUBAHAN DIMULAI DI SINI ---
 
-        if ($childRelation) {
-            $parents = Relationship::where('family_unit_id', $childRelation->family_unit_id)
-                ->where('role_in_family', 'partner')
-                ->join('people', 'relationships.person_id', '=', 'people.id')
-                ->get(['people.id', 'people.gender']);
-            
-            $fatherId = $parents->firstWhere('gender', 'Laki-laki')->id ?? null;
-            $motherId = $parents->firstWhere('gender', 'Perempuan')->id ?? null;
-        }
+        // Ambil objek Person lengkap untuk ayah dan ibu menggunakan relasi
+        $father = $person->father();
+        $mother = $person->mother();
 
-        return view('people.edit', compact('person', 'people', 'fatherId', 'motherId'));
+        // Kita tidak perlu lagi mengirimkan daftar $people ke view.
+        // Tom Select akan mengambil data melalui API.
+        // Logika `excludedIds` juga tidak diperlukan lagi di sini.
+
+        return view('people.edit', compact('person', 'father', 'mother'));
+        
+        // --- PERUBAHAN SELESAI ---
     }
 
     public function update(UpdatePersonRequest $request, Person $person)
@@ -143,5 +134,36 @@ class PersonController extends Controller
         }
         
         Relationship::create(['family_unit_id' => $familyUnitId, 'person_id' => $child->id, 'role_in_family' => 'child']);
+    }
+
+    /**
+     * Menyediakan data untuk API pencarian dropdown (Tom Select).
+     */
+    public function searchApi(Request $request)
+    {
+        $query = Person::query();
+
+        if ($request->has('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // --- TAMBAHKAN LOGIKA FILTER GENDER ---
+        if ($request->has('gender')) {
+            $query->where('gender', $request->gender);
+        }
+        // ------------------------------------
+
+        // Batasi hasil untuk performa yang lebih baik
+        $people = $query->orderBy('name')->take(50)->get(['id', 'name']);
+
+        // Ubah format agar sesuai dengan yang dibutuhkan Tom Select
+        $formattedPeople = $people->map(function ($person) {
+            return [
+                'value' => $person->id,
+                'text' => $person->name . ' (ID: ' . $person->id . ')',
+            ];
+        });
+
+        return response()->json($formattedPeople);
     }
 }

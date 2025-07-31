@@ -9,10 +9,8 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    {{-- AWAL PERUBAHAN --}}
                     <div x-data="{ submitting: false }">
                         <form method="POST" action="{{ route('people.store') }}" @submit="submitting = true">
-                    {{-- AKHIR PERUBAHAN --}}
                             @csrf
 
                             <!-- Nama -->
@@ -31,26 +29,18 @@
                                 </select>
                             </div>
 
-                            <!-- Ayah -->
+                            <!-- Ayah (Tom Select) -->
                             <div class="mt-4">
                                 <x-input-label for="father_id" :value="__('Ayah')" />
-                                <select name="father_id" id="father_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                                    <option value="">-- Tidak Diketahui --</option>
-                                    @foreach ($people->where('gender', 'Laki-laki') as $father)
-                                        <option value="{{ $father->id }}" @selected(old('father_id') == $father->id)>{{ $father->name }}</option>
-                                    @endforeach
-                                </select>
+                                <input type="text" id="father_id" name="father_id" value="{{ old('father_id') }}" placeholder="Ketik untuk mencari nama ayah...">
+                                <x-input-error :messages="$errors->get('father_id')" class="mt-2" />
                             </div>
 
-                            <!-- Ibu -->
+                            <!-- Ibu (Tom Select) -->
                             <div class="mt-4">
                                 <x-input-label for="mother_id" :value="__('Ibu')" />
-                                <select name="mother_id" id="mother_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                                    <option value="">-- Tidak Diketahui --</option>
-                                    @foreach ($people->where('gender', 'Perempuan') as $mother)
-                                        <option value="{{ $mother->id }}" @selected(old('mother_id') == $mother->id)>{{ $mother->name }}</option>
-                                    @endforeach
-                                </select>
+                                <input type="text" id="mother_id" name="mother_id" value="{{ old('mother_id') }}" placeholder="Ketik untuk mencari nama ibu...">
+                                <x-input-error :messages="$errors->get('mother_id')" class="mt-2" />
                             </div>
 
                             <!-- Tanggal Lahir & Tempat Lahir -->
@@ -86,7 +76,6 @@
                             <div class="mt-4">
                                 <label for="is_key_figure" class="inline-flex items-center">
                                     <input id="is_key_figure" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="is_key_figure" value="1"
-                                        {{-- Untuk form edit, tambahkan kondisi checked --}}
                                         @if(isset($person) && old('is_key_figure', $person->is_key_figure)) checked @endif
                                     >
                                     <span class="ms-2 text-sm text-gray-600">{{ __('Tandai sebagai Tokoh Kunci (tampil di halaman depan)') }}</span>
@@ -95,12 +84,10 @@
 
                             <div class="flex items-center justify-end mt-4">
                                 <a href="{{ route('people.index') }}" class="text-sm text-gray-600 hover:text-gray-900 mr-4">Batal</a>
-                                {{-- AWAL PERUBAHAN --}}
                                 <x-primary-button x-bind:disabled="submitting">
                                     <span x-show="!submitting">{{ __('Simpan') }}</span>
                                     <span x-show="submitting">{{ __('Menyimpan...') }}</span>
                                 </x-primary-button>
-                                {{-- AKHIR PERUBAHAN --}}
                             </div>
                         </form>
                     </div>
@@ -108,4 +95,51 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Fungsi untuk membuat instance Tom Select dengan konfigurasi
+            function createTomSelect(selector, gender) {
+                new window.TomSelect(selector, {
+                    valueField: 'value',
+                    labelField: 'text',
+                    searchField: 'text',
+                    maxItems: 1, // <-- PERBAIKAN 1: Batasi hanya satu pilihan
+                    create: false,
+                    load: function(query, callback) {
+                        if (!query.length) return callback();
+                        // <-- PERBAIKAN 2: Kirim parameter gender -->
+                        let url = `{{ route('people.search') }}?search=${encodeURIComponent(query)}`;
+                        if (gender) {
+                            url += `&gender=${gender}`;
+                        }
+                        
+                        fetch(url)
+                            .then(response => response.json())
+                            .then(json => {
+                                callback(json);
+                            }).catch(()=>{
+                                callback();
+                            });
+                    },
+                    render: {
+                        option: function(item, escape) {
+                            return `<div>${escape(item.text)}</div>`;
+                        },
+                        item: function(item, escape) {
+                            return `<div>${escape(item.text)}</div>`;
+                        }
+                    }
+                });
+            }
+
+            // Inisialisasi Tom Select untuk Ayah (hanya Laki-laki)
+            createTomSelect('#father_id', 'Laki-laki');
+
+            // Inisialisasi Tom Select untuk Ibu (hanya Perempuan)
+            createTomSelect('#mother_id', 'Perempuan');
+        });
+    </script>
+    @endpush
 </x-app-layout>

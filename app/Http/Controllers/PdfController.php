@@ -13,9 +13,11 @@ class PdfController extends Controller
      */
     public function showExportForm()
     {
-        $people = Person::orderBy('name')->get();
-        return view('pdf.export-form', compact('people'));
+        // --- PERUBAHAN: Hapus pengambilan data $people ---
+        // $people = Person::orderBy('name')->get(); // Baris ini tidak diperlukan lagi
+        return view('pdf.export-form'); // Kirim view tanpa data
     }
+
 
     /**
      * Menghasilkan dan mengirimkan file PDF silsilah.
