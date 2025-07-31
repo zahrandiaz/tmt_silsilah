@@ -40,6 +40,11 @@
                     @if($person->death_date_formatted)
                         <br>Wafat: {{ $person->death_date_formatted }} di {{ $person->death_place ?? '?' }}
                     @endif
+                    
+                    {{-- TAMBAHKAN BLOK INI UNTUK MENAMPILKAN NOMOR HP --}}
+                    @if($person->phone_number)
+                        <br>No. HP: {{ $person->phone_number }}
+                    @endif
                 </p>
                 @if($person->biography)
                     <p class="mt-4">{{ $person->biography }}</p>

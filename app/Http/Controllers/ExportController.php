@@ -38,10 +38,15 @@ class ExportController extends Controller
             $gedcomContent .= "1 NAME " . str_replace(' ', ' /', $person->name) . "/\n";
             $gedcomContent .= "1 SEX " . ($person->gender === 'Laki-laki' ? 'M' : 'F') . "\n";
 
+            // --- TAMBAHKAN BLOK INI UNTUK NOMOR HP ---
+            if ($person->phone_number) {
+                $gedcomContent .= "1 PHON " . $person->phone_number . "\n";
+            }
+            // -----------------------------------------
+
             if ($person->birth_date) {
                 $gedcomContent .= "1 BIRT\n";
                 $gedcomContent .= "2 DATE " . strtoupper(Carbon::parse($person->birth_date)->format('j M Y')) . "\n";
-                // --- TAMBAHKAN INI: Ekspor Tempat Lahir ---
                 if ($person->birth_place) {
                     $gedcomContent .= "2 PLAC " . $person->birth_place . "\n";
                 }
@@ -50,15 +55,12 @@ class ExportController extends Controller
             if ($person->death_date) {
                 $gedcomContent .= "1 DEAT\n";
                 $gedcomContent .= "2 DATE " . strtoupper(Carbon::parse($person->death_date)->format('j M Y')) . "\n";
-                // --- TAMBAHKAN INI: Ekspor Tempat Wafat ---
                 if ($person->death_place) {
                     $gedcomContent .= "2 PLAC " . $person->death_place . "\n";
                 }
             }
             
-            // --- TAMBAHKAN INI: Ekspor Biografi ---
             if ($person->biography) {
-                // Mengganti baris baru dengan format GEDCOM CONC (concatenate)
                 $biographyLines = explode("\n", $person->biography);
                 $gedcomContent .= "1 NOTE " . trim(array_shift($biographyLines)) . "\n";
                 foreach ($biographyLines as $bioLine) {

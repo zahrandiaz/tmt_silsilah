@@ -13,37 +13,40 @@
                         <form method="POST" action="{{ route('people.store') }}" @submit="submitting = true">
                             @csrf
 
-                            <!-- Nama -->
                             <div>
                                 <x-input-label for="name" :value="__('Nama Lengkap')" />
                                 <x-text-input id="name" class="block mt-1 w-full capitalize-input" type="text" name="name" :value="old('name')" required autofocus />
                                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
                             </div>
 
-                            <!-- Jenis Kelamin -->
-                            <div class="mt-4">
-                                <x-input-label for="gender" :value="__('Jenis Kelamin')" />
-                                <select name="gender" id="gender" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                                    <option value="Laki-laki" @selected(old('gender') == 'Laki-laki')>Laki-laki</option>
-                                    <option value="Perempuan" @selected(old('gender') == 'Perempuan')>Perempuan</option>
-                                </select>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <x-input-label for="gender" :value="__('Jenis Kelamin')" />
+                                    <select name="gender" id="gender" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                        <option value="Laki-laki" @selected(old('gender') == 'Laki-laki')>Laki-laki</option>
+                                        <option value="Perempuan" @selected(old('gender') == 'Perempuan')>Perempuan</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <x-input-label for="phone_number" :value="__('Nomor HP')" />
+                                    <x-text-input id="phone_number" class="block mt-1 w-full" type="text" name="phone_number" :value="old('phone_number')" />
+                                    <x-input-error :messages="$errors->get('phone_number')" class="mt-2" />
+                                </div>
                             </div>
 
-                            <!-- Ayah (Tom Select) -->
                             <div class="mt-4">
                                 <x-input-label for="father_id" :value="__('Ayah')" />
                                 <input type="text" id="father_id" name="father_id" value="{{ old('father_id') }}" placeholder="Ketik untuk mencari nama ayah...">
                                 <x-input-error :messages="$errors->get('father_id')" class="mt-2" />
                             </div>
 
-                            <!-- Ibu (Tom Select) -->
                             <div class="mt-4">
                                 <x-input-label for="mother_id" :value="__('Ibu')" />
                                 <input type="text" id="mother_id" name="mother_id" value="{{ old('mother_id') }}" placeholder="Ketik untuk mencari nama ibu...">
                                 <x-input-error :messages="$errors->get('mother_id')" class="mt-2" />
                             </div>
 
-                            <!-- Tanggal Lahir & Tempat Lahir -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                 <div>
                                     <x-input-label for="birth_date" :value="__('Tanggal Lahir')" />
@@ -55,7 +58,6 @@
                                 </div>
                             </div>
 
-                            <!-- Tanggal Wafat & Tempat Wafat -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                 <div>
                                     <x-input-label for="death_date" :value="__('Tanggal Wafat')" />
@@ -67,7 +69,6 @@
                                 </div>
                             </div>
 
-                            <!-- Biografi -->
                             <div class="mt-4">
                                 <x-input-label for="biography" :value="__('Biografi Singkat')" />
                                 <textarea name="biography" id="biography" rows="4" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('biography') }}</textarea>
@@ -99,17 +100,15 @@
     @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Fungsi untuk membuat instance Tom Select dengan konfigurasi
             function createTomSelect(selector, gender) {
                 new window.TomSelect(selector, {
                     valueField: 'value',
                     labelField: 'text',
                     searchField: 'text',
-                    maxItems: 1, // <-- PERBAIKAN 1: Batasi hanya satu pilihan
+                    maxItems: 1,
                     create: false,
                     load: function(query, callback) {
                         if (!query.length) return callback();
-                        // <-- PERBAIKAN 2: Kirim parameter gender -->
                         let url = `{{ route('people.search') }}?search=${encodeURIComponent(query)}`;
                         if (gender) {
                             url += `&gender=${gender}`;
@@ -133,11 +132,7 @@
                     }
                 });
             }
-
-            // Inisialisasi Tom Select untuk Ayah (hanya Laki-laki)
             createTomSelect('#father_id', 'Laki-laki');
-
-            // Inisialisasi Tom Select untuk Ibu (hanya Perempuan)
             createTomSelect('#mother_id', 'Perempuan');
         });
     </script>
