@@ -19,10 +19,10 @@ class DatabaseSeeder extends Seeder
         // [TAMBAHKAN BLOK INI]
         // Cari atau buat pengguna Admin utama
         User::firstOrCreate(
-            ['email' => 'admin@example.com'], // Kunci unik untuk mencari
+            ['email' => 'admin@tmt.com'], // Kunci unik untuk mencari
             [
                 'name' => 'Admin Utama',
-                'password' => Hash::make('admin123'), // Ganti 'password' dengan password yang aman
+                'password' => Hash::make('logikadunia24'), // Ganti 'password' dengan password yang aman
                 'role' => 'admin',
                 'email_verified_at' => now(), // Langsung verifikasi email
             ]
