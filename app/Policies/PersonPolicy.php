@@ -61,6 +61,15 @@ class PersonPolicy
     }
 
     /**
+     * Tentukan apakah user bisa membuat data person baru.
+     * Hanya admin yang bisa.
+     */
+    public function create(User $user): bool
+    {
+        return $user->role === 'admin';
+    }
+
+    /**
      * Tentukan apakah user bisa mengubah data person.
      */
     public function update(User $user, Person $person): bool
