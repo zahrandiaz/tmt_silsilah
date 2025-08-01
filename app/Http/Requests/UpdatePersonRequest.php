@@ -11,7 +11,10 @@ class UpdatePersonRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        // --- PERBAIKAN KRITIS ---
+        // Panggil method 'update' yang ada di PersonPolicy.
+        // 'person' diambil dari nama parameter di route: {person}.
+        return $this->user()->can('update', $this->route('person'));
     }
 
     /**
@@ -26,7 +29,7 @@ class UpdatePersonRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'gender' => 'required|in:Laki-laki,Perempuan',
-            'phone_number' => 'nullable|string|max:20', // <-- ADD THIS
+            'phone_number' => 'nullable|string|max:20',
             'birth_date' => 'nullable|date',
             'birth_place' => 'nullable|string|max:255',
             'death_date' => 'nullable|date|after_or_equal:birth_date',

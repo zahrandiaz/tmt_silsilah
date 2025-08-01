@@ -85,11 +85,17 @@ class PersonController extends Controller
 
         $this->syncParents($person, $request->father_id, $request->mother_id);
 
-        return redirect()->route('people.index')->with('success', 'Data anggota keluarga berhasil diperbarui.');
+        // --- PERUBAHAN DI SINI ---
+        // Alihkan ke halaman detail orang yang baru saja diubah.
+        return redirect()->route('people.show', $person)->with('success', 'Data anggota keluarga berhasil diperbarui.');
     }
 
     public function destroy(Person $person)
     {
+        // --- PERBAIKAN KRITIS DI SINI ---
+        // Panggil method 'delete' di PersonPolicy sebelum melakukan aksi.
+        $this->authorize('delete', $person);
+
         $person->delete();
         return redirect()->route('people.index')->with('success', 'Data anggota keluarga berhasil dihapus.');
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Person; // Pastikan use statement ini ada
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePersonRequest extends FormRequest
@@ -11,8 +12,9 @@ class StorePersonRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Kita set true karena otorisasi sudah ditangani oleh Policy atau Middleware.
-        return true;
+        // --- PERBAIKAN KRITIS ---
+        // Panggil method 'create' yang baru saja kita buat di PersonPolicy.
+        return $this->user()->can('create', Person::class);
     }
 
     /**
@@ -25,12 +27,12 @@ class StorePersonRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'gender' => 'required|in:Laki-laki,Perempuan',
-            'phone_number' => 'nullable|string|max:20', // <-- TAMBAHKAN INI
+            'phone_number' => 'nullable|string|max:20',
             'birth_date' => 'nullable|date',
             'birth_place' => 'nullable|string|max:255',
             'death_date' => 'nullable|date|after_or_equal:birth_date',
             'death_place' => 'nullable|string|max:255',
-            'biography' => 'nullable|string', // Aturan ini sudah benar (tanpa batas max)
+            'biography' => 'nullable|string',
             'father_id' => 'nullable|exists:people,id',
             'mother_id' => 'nullable|exists:people,id',
             'is_key_figure' => 'nullable|boolean',
